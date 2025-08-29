@@ -1,0 +1,3201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚓ Weather Engine Maritime - Dynamic Intelligence Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Poppins:wght@100;200;300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Three.js and Vanta.js for dynamic backgrounds -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.topology.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.cells.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.topology.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.cells.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+                        'display': ['Space Grotesk', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                        'body': ['Poppins', 'Inter', 'Helvetica', 'Arial', 'sans-serif'],
+                        'modern': ['Outfit', 'Inter', 'Helvetica Neue', 'sans-serif'],
+                        'helvetica': ['Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif']
+                    },
+                    colors: {
+                        ocean: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        maritime: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    },
+                    animation: {
+                        'wave': 'wave 3s ease-in-out infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        wave: {
+                            '0%, 100%': { transform: 'rotate(0deg)' },
+                            '50%': { transform: 'rotate(3deg)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        glow: {
+                            '0%': { boxShadow: '0 0 5px #0ea5e9, 0 0 10px #0ea5e9, 0 0 15px #0ea5e9' },
+                            '100%': { boxShadow: '0 0 10px #0ea5e9, 0 0 20px #0ea5e9, 0 0 30px #0ea5e9' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Hide scrollbar for all browsers */
+        html {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* Internet Explorer 10+ */
+        }
+        html::-webkit-scrollbar {
+            width: 0; /* Chrome, Safari, and Opera */
+            height: 0;
+        }
+        body {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* Internet Explorer 10+ */
+        }
+        body::-webkit-scrollbar {
+            width: 0; /* Chrome, Safari, and Opera */
+            height: 0;
+        }
+        
+        .glass {
+            background: rgba(22, 40, 56, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(63, 124, 172, 0.2);
+        }
+        .gradient-text {
+            background: linear-gradient(45deg, #ffffff, #f0f9ff, #e0f2fe, #bae6fd);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 300% 300%;
+            animation: gradient 3s ease infinite;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        @keyframes gradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        /* Dynamic Text Animations */
+        .dynamic-subtitle {
+            background: linear-gradient(45deg, 
+                #ffffff, #e0f2fe, #b3e5fc, #81d4fa, 
+                #4fc3f7, #29b6f6, #03a9f4, #039be5);
+            background-size: 400% 400%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: dynamicFlow 4s ease-in-out infinite;
+            text-shadow: 0 4px 20px rgba(3, 169, 244, 0.3);
+            filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.1));
+        }
+        .dynamic-powered {
+            background: linear-gradient(90deg, 
+                #ffd700, #ffeb3b, #fff176, #ffffff, 
+                #e1f5fe, #b3e5fc, #4fc3f7, #03a9f4);
+            background-size: 600% 600%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: poweredFlow 5s ease-in-out infinite;
+            text-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+        @keyframes dynamicFlow {
+            0%, 100% { 
+                background-position: 0% 50%;
+                transform: scale(1);
+            }
+            25% { 
+                background-position: 25% 50%;
+                transform: scale(1.02);
+            }
+            50% { 
+                background-position: 100% 50%;
+                transform: scale(1.04);
+            }
+            75% { 
+                background-position: 75% 50%;
+                transform: scale(1.02);
+            }
+        }  
+        @keyframes poweredFlow {
+            0%, 100% { 
+                background-position: 0% 50%;
+                filter: brightness(1) hue-rotate(0deg);
+            }
+            33% { 
+                background-position: 50% 50%;
+                filter: brightness(1.1) hue-rotate(30deg);
+            }
+            66% { 
+                background-position: 100% 50%;
+                filter: brightness(1.2) hue-rotate(60deg);
+            }
+        }       
+        /* Exact Dark Ocean Background from Index.html */
+        .bg-ocean-gradient {
+            background: linear-gradient(135deg, 
+                #001122 0%, 
+                #002244 25%, 
+                #003366 50%, 
+                #002244 75%, 
+                #001122 100%);
+        }       
+        /* Exact Animated Background from Index.html */
+        .animated-bg {
+            background: linear-gradient(-45deg, #001122, #002244, #003366, #004488);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }        
+        .ocean-waves {
+            background: linear-gradient(45deg, #0c4a6e, #075985, #0369a1, #0284c7);
+            background-size: 400% 400%;
+            animation: gradient 8s ease infinite;
+        }
+        .floating-particles {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #38bdf8;
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+            opacity: 0.6;
+        }
+        @keyframes float {
+            0% { transform: translateY(100vh) translateX(0px); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
+        }
+        .weather-card:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+        .metric-counter {
+            font-variant-numeric: tabular-nums;
+        }
+        .map-glow {
+            box-shadow: 0 0 50px rgba(14, 165, 233, 0.3);
+        }
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #0ea5e9 0%, #22c55e 100%);
+            outline: none;
+            border-radius: 15px;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            border: 2px solid #0ea5e9;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            border: 2px solid #0ea5e9;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+        }
+        .route-line {
+            animation: route-pulse 3s ease-in-out infinite;
+        }
+        @keyframes route-pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+        .custom-marker {
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+        .waypoint-marker {
+            filter: drop-shadow(0 2px 4px rgba(6, 182, 212, 0.5));
+        }
+        @keyframes mapPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+        .map-marker-pulse {
+            animation: mapPulse 2s ease-in-out infinite;
+        }
+        @keyframes windFlow {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+        @keyframes waveMotion {
+            0%, 100% { background-position: 0 0; }
+            50% { background-position: 20px 20px; }
+        }
+        @keyframes vesselMove {
+            0% { transform: translateX(0) translateY(0); }
+            25% { transform: translateX(20px) translateY(-10px); }
+            50% { transform: translateX(-10px) translateY(15px); }
+            75% { transform: translateX(15px) translateY(-5px); }
+            100% { transform: translateX(0) translateY(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* Premium Card Effects & Modern Styling */
+        .premium-card {
+            background: rgba(22, 40, 56, 0.12);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(63, 124, 172, 0.25);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 1px 0 rgba(63, 124, 172, 0.15) inset,
+                0 -1px 0 rgba(0, 0, 0, 0.3) inset;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+        .premium-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 20px 60px rgba(63, 124, 172, 0.25),
+                0 8px 32px rgba(0, 0, 0, 0.5),
+                0 1px 0 rgba(63, 124, 172, 0.3) inset;
+            border-color: rgba(63, 124, 172, 0.4);
+        }
+        .neo-glass {
+            background: linear-gradient(135deg, 
+                rgba(22, 40, 56, 0.18) 0%, 
+                rgba(12, 30, 38, 0.08) 100%);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid rgba(63, 124, 172, 0.3);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(63, 124, 172, 0.2),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+        }
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border-radius: 16px;
+            padding: 2px;
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            padding: 2px;
+            background: linear-gradient(135deg, #0ea5e9, #06b6d4, #3b82f6, #8b5cf6);
+            border-radius: inherit;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            animation: gradient-rotation 3s linear infinite;
+        }
+        @keyframes gradient-rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .modern-button {
+            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+            box-shadow: 
+                0 4px 15px rgba(14, 165, 233, 0.4),
+                0 1px 3px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .modern-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        .modern-button:hover::before {
+            left: 100%;
+        }
+        .modern-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(14, 165, 233, 0.5),
+                0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .premium-text {
+            font-family: 'Helvetica Neue', 'Space Grotesk', sans-serif;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+        }
+        .modern-heading {
+            font-family: 'Helvetica Neue', 'Inter', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+        }
+        .elegant-subtext {
+            font-family: 'Helvetica Neue', 'Poppins', sans-serif;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            line-height: 1.6;
+        }
+        /* Enhanced Interactive Elements */
+        .interactive-card {
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+        }
+        .interactive-card:hover {
+            transform: translateY(-5px) rotateX(5deg);
+            box-shadow: 
+                0 20px 40px rgba(14, 165, 233, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        .glow-effect {
+            position: relative;
+        }
+        .glow-effect::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            opacity: 0;
+            background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+            filter: blur(20px);
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+        .glow-effect:hover::after {
+            opacity: 0.3;
+        }
+        /* Enhanced Dynamic Background - RE-ENABLED WITH TOPOLOGY */
+        .vanta-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 1 !important;
+            display: block !important;
+            background: transparent !important;
+        }
+        /* Low-Poly Background Base */
+        .low-poly-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: linear-gradient(135deg, #0a1929 0%, #162838 30%, #1a2332 60%, #0f1b28 100%);
+        }
+        .geometric-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 15% 25%, rgba(74, 144, 226, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 85% 75%, rgba(107, 182, 255, 0.04) 0%, transparent 35%),
+                radial-gradient(circle at 45% 60%, rgba(26, 84, 144, 0.03) 0%, transparent 45%);
+            opacity: 0.5;
+        }
+        .enhanced-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        .enhanced-particles::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.15), transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(14, 165, 233, 0.2), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(6, 182, 212, 0.25), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(59, 130, 246, 0.2), transparent);
+            background-repeat: repeat;
+            background-size: 150px 150px;
+            animation: float-particles 20s linear infinite;
+        }
+        @keyframes float-particles {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-200px) rotate(360deg); }
+        }
+        /* Additional Low-Poly CSS Enhancements */
+        .polygon-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -3;
+            overflow: hidden;
+        }
+        .polygon {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(63, 124, 172, 0.1), rgba(41, 98, 149, 0.05));
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            animation: float-polygon 20s infinite linear;
+        }
+        .polygon:nth-child(1) {
+            width: 200px;
+            height: 200px;
+            top: 10%;
+            left: 15%;
+            animation-delay: 0s;
+            background: linear-gradient(135deg, rgba(52, 109, 158, 0.08), rgba(63, 124, 172, 0.04));
+        }
+        .polygon:nth-child(2) {
+            width: 150px;
+            height: 150px;
+            top: 60%;
+            right: 20%;
+            animation-delay: -5s;
+            clip-path: polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%);
+            background: linear-gradient(135deg, rgba(41, 98, 149, 0.06), rgba(52, 109, 158, 0.03));
+        }
+        .polygon:nth-child(3) {
+            width: 120px;
+            height: 120px;
+            top: 30%;
+            right: 10%;
+            animation-delay: -10s;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            background: linear-gradient(135deg, rgba(63, 124, 172, 0.05), rgba(41, 98, 149, 0.02));
+        }
+        @keyframes float-polygon {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 0.6; }
+        }
+        /* Custom Scrollbar Styles */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(59, 130, 246, 0.7) rgba(15, 23, 42, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(
+                180deg,
+                rgba(59, 130, 246, 0.8) 0%,
+                rgba(37, 99, 235, 0.9) 50%,
+                rgba(29, 78, 216, 1) 100%
+            );
+            border-radius: 10px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(
+                180deg,
+                rgba(99, 179, 237, 0.9) 0%,
+                rgba(59, 130, 246, 1) 50%,
+                rgba(37, 99, 235, 1) 100%
+            );
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:active {
+            background: linear-gradient(
+                180deg,
+                rgba(29, 78, 216, 1) 0%,
+                rgba(37, 99, 235, 1) 50%,
+                rgba(59, 130, 246, 1) 100%
+            );
+        }
+        /* Alternative Maritime Theme Scrollbar */
+        .maritime-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(6, 182, 212, 0.7) rgba(8, 47, 73, 0.4);
+        }
+        .maritime-scrollbar::-webkit-scrollbar {
+            width: 10px;
+        }
+        .maritime-scrollbar::-webkit-scrollbar-track {
+            background: rgba(8, 47, 73, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+        .maritime-scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(
+                45deg,
+                rgba(6, 182, 212, 0.8) 0%,
+                rgba(14, 165, 233, 0.9) 25%,
+                rgba(2, 132, 199, 1) 50%,
+                rgba(3, 105, 161, 1) 75%,
+                rgba(7, 89, 133, 1) 100%
+            );
+            border-radius: 12px;
+            border: 1px solid rgba(6, 182, 212, 0.4);
+            box-shadow: 
+                0 2px 4px rgba(6, 182, 212, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.1);
+        }
+        .maritime-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(
+                45deg,
+                rgba(34, 211, 238, 0.9) 0%,
+                rgba(6, 182, 212, 1) 25%,
+                rgba(14, 165, 233, 1) 50%,
+                rgba(2, 132, 199, 1) 75%,
+                rgba(3, 105, 161, 1) 100%
+            );
+            box-shadow: 
+                0 4px 8px rgba(6, 182, 212, 0.4),
+                inset 0 1px 2px rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        .maritime-scrollbar::-webkit-scrollbar-thumb:active {
+            background: linear-gradient(
+                45deg,
+                rgba(3, 105, 161, 1) 0%,
+                rgba(7, 89, 133, 1) 25%,
+                rgba(14, 165, 233, 1) 50%,
+                rgba(6, 182, 212, 1) 75%,
+                rgba(34, 211, 238, 1) 100%
+            );
+        }
+        /* Alert Popup Notifications */
+        .alert-popup-container {
+            position: fixed;
+            z-index: 1000;
+            max-width: 350px;
+            transition: all 0.3s ease-in-out;
+        }
+        .alert-popup-container.top-right {
+            top: 20px;
+            right: 20px;
+        }
+        .alert-popup-container.bottom-right {
+            bottom: 20px;
+            right: 20px;
+        }
+        .alert-popup {
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 
+                0 10px 25px rgba(0, 0, 0, 0.3),
+                0 0 20px rgba(59, 130, 246, 0.1);
+            transform: translateX(400px);
+            opacity: 0;
+            animation: slideInAlert 0.5s ease-out forwards;
+        }
+        .alert-popup.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        .alert-popup.hide {
+            animation: slideOutAlert 0.3s ease-in forwards;
+        }
+        @keyframes slideInAlert {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOutAlert {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        .alert-popup .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #ef4444;
+            transition: all 0.2s ease;
+        }
+        .alert-popup .close-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+        /* Position Toggle Button */
+        .position-toggle {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: #3b82f6;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+        }
+        .position-toggle:hover {
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="animated-bg text-white font-helvetica overflow-x-hidden" style="font-family: 'Helvetica Neue', 'Inter', 'Helvetica', sans-serif;">
+    <!-- Alert Popup Container -->
+    <div id="alertPopupContainer" class="alert-popup-container top-right"></div>
+    <!-- Low-Poly Dynamic Background -->
+    <div class="polygon-shapes">
+        <div class="polygon"></div>
+        <div class="polygon"></div>
+        <div class="polygon"></div>
+    </div>
+    <div class="low-poly-bg"></div>
+    <div id="vanta-background" class="vanta-background"></div>
+    <div class="geometric-overlay"></div>
+    <div class="enhanced-particles"></div>
+    <!-- Floating Particles Animation -->
+    <div class="fixed inset-0 pointer-events-none">
+        <div class="floating-particles" style="left: 10%; animation-delay: 0s;"></div>
+        <div class="floating-particles" style="left: 20%; animation-delay: 2s;"></div>
+        <div class="floating-particles" style="left: 30%; animation-delay: 4s;"></div>
+        <div class="floating-particles" style="left: 40%; animation-delay: 6s;"></div>
+        <div class="floating-particles" style="left: 50%; animation-delay: 8s;"></div>
+        <div class="floating-particles" style="left: 60%; animation-delay: 10s;"></div>
+        <div class="floating-particles" style="left: 70%; animation-delay: 12s;"></div>
+        <div class="floating-particles" style="left: 80%; animation-delay: 14s;"></div>
+        <div class="floating-particles" style="left: 90%; animation-delay: 16s;"></div>
+    </div>
+    <!-- Navigation Bar -->
+    <nav class="glass fixed top-0 left-0 right-0 z-50 p-2" data-aos="fade-down">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-anchor text-lg animate-wave text-ocean-300"></i>
+                <span class="text-lg font-bold gradient-text">Weather Engine Maritime</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div id="liveTime" class="glass px-2 py-1 rounded-lg border border-ocean-300/30 bg-ocean-900/20 backdrop-blur-sm text-sm"></div>
+                <div class="pl-5 flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-xs">Live System</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto px-6 py-24">
+        <!-- Hero Section -->
+        <div class="text-center mb-16" data-aos="zoom-in" data-aos-duration="1000">
+            <h1 class="text-6xl md:text-8xl font-black mb-6 animate-float modern-heading">
+                <span class="gradient-text" style="font-family: 'Helvetica Neue', 'Space Grotesk', sans-serif;">⚓ MARITIME</span>
+                <br>
+                <span class="text-white" style="font-family: 'Helvetica Neue', 'Space Grotesk', sans-serif;">INTELLIGENCE</span>
+            </h1>
+            <p class="text-2xl md:text-4xl lg:text-5xl text-ocean-200 mb-8 max-w-6xl mx-auto leading-relaxed elegant-subtext">
+                <span class="dynamic-subtitle font-bold tracking-wide">
+                    Real-time Weather Intelligence • Route Optimization • Maritime Safety
+                </span>
+                <br><br>
+                <span class="dynamic-powered text-xl md:text-2xl lg:text-3xl font-semibold tracking-wider">
+                    Powered by Advanced Physics & AI Algorithms
+                </span>
+            </p>
+            <div>
+                <div id="mockBanner" class="mt-6 bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 px-8 py-4 rounded-2xl inline-block">
+                    <div class="flex flex-row items-center space-x-6">
+                        <div class="flex flex-col">
+                            <span class="text-md text-yellow-300 text-left block">PostgreSQL</span>
+                            <span class="text-lg font-semibold mr-2">Connectivity Status</span>
+                        </div>
+                        <span class="text-lg text-green-400 flex items-center" id="dbStatus">
+                            <i class="fas fa-check mr-1 text-green-400"></i>
+                            Online
+                        </span>
+                    </div>
+                </div>
+            </div>       
+        </div>
+        <!-- Live Metrics Dashboard -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div class="premium-card interactive-card rounded-2xl p-6 text-center weather-card bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30" data-aos="fade-up" data-aos-delay="100">
+                <div class="text-4xl mb-2">🌊</div>
+                <div class="text-2xl font-bold metric-counter premium-text" id="waveHeight">2.4m</div>
+                <div class="text-ocean-300 elegant-subtext">Wave Height</div>
+                <div class="mt-2 text-sm text-green-400">
+                    <i class="fas fa-arrow-down mr-1"></i>Decreasing
+                </div>
+            </div>
+            <div class="premium-card interactive-card rounded-2xl p-6 text-center weather-card bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30" data-aos="fade-up" data-aos-delay="200">
+                <div class="text-4xl mb-2">💨</div>
+                <div class="text-2xl font-bold metric-counter premium-text" id="windSpeed">12.8 kts</div>
+                <div class="text-ocean-300 elegant-subtext">Wind Speed</div>
+                <div class="mt-2 text-sm text-yellow-400">
+                    <i class="fas fa-arrow-right mr-1"></i>Stable
+                </div>
+            </div>
+            <div class="premium-card interactive-card rounded-2xl p-6 text-center weather-card bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30" data-aos="fade-up" data-aos-delay="300">
+                <div class="text-4xl mb-2">⛽</div>
+                <div class="text-2xl font-bold metric-counter premium-text text-green-400" id="fuelSavings">15.3%</div>
+                <div class="text-ocean-300 elegant-subtext">Fuel Savings</div>
+                <div class="mt-2 text-sm text-green-400">
+                    <i class="fas fa-arrow-up mr-1"></i>Optimized
+                </div>
+            </div>
+            <div class="premium-card interactive-card rounded-2xl p-6 text-center weather-card bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30" data-aos="fade-up" data-aos-delay="400">
+                <div class="text-4xl mb-2">🚨</div>
+                <div class="text-2xl font-bold metric-counter premium-text" id="alertCount">0</div>
+                <div class="text-ocean-300 elegant-subtext">Active Alerts</div>
+                <div class="mt-2 text-sm text-green-400">
+                    <i class="fas fa-check mr-1"></i>All Clear
+                </div>
+            </div>
+        </div>
+        <!-- API Status Panel -->
+        <div class="premium-card bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 rounded-2xl p-6 mb-12" data-aos="fade-up">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-server mr-3 text-ocean-400"></i>
+                    System Status
+                </h2>
+                <button id="refreshStatus" class="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-all">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="flex items-center justify-between p-4 bg-slate-800 border border-yellow-400/30 rounded-xl">
+                    <div>
+                        <div class="text-sm text-yellow-300">Backend API</div>
+                        <div class="text-lg font-semibold">Port 8000</div>
+                    </div>
+                    <div id="apiStatus" class="text-red-400 flex items-center">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>Checking...
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-slate-800 border border-yellow-400/30 rounded-xl">
+                    <div>
+                        <div class="text-sm text-yellow-300">Route Data</div>
+                        <div class="text-lg font-semibold">Mumbai → Kochi</div>
+                    </div>
+                    <div id="routeStatus" class="text-green-400 flex items-center">
+                        <i class="fas fa-check mr-2"></i>Loaded
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-slate-800 border border-yellow-400/30 rounded-xl">
+                    <div>
+                        <div class="text-sm text-yellow-300">Weather Data</div>
+                        <div class="text-lg font-semibold">10-day Forecast</div>
+                    </div>
+                    <div id="weatherStatus" class="text-green-400 flex items-center">
+                        <i class="fas fa-cloud mr-2"></i>Active
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Port Selection Panel -->
+        <div class="bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 rounded-2xl p-6 mb-8" data-aos="zoom-in">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <i class="fas fa-anchor mr-3 text-yellow-400"></i>
+                Route Configuration
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Source Port -->
+                <div class="space-y-3">
+                    <label class="block text-sm font-semibold text-ocean-200">
+                        <i class="fas fa-ship mr-2 text-green-400"></i>Departure Port
+                    </label>
+                    <select id="sourcePort" class="w-full glass rounded-xl px-4 py-3 text-white bg-white/10 border border-white/20 focus:border-ocean-400 focus:ring-2 focus:ring-ocean-400/50 transition-all">
+                        <option class="text-black" value="mumbai">🇮🇳 Mumbai Port (INMUN)</option>
+                        <option class="text-black" value="chennai">🇮🇳 Chennai Port (INMAA)</option>
+                        <option class="text-black" value="visakhapatnam">🇮🇳 Visakhapatnam Port (INVTZ)</option>
+                        <option class="text-black" value="kolkata">🇮🇳 Kolkata Port (INCCU)</option>
+                        <option class="text-black" value="singapore">🇸🇬 Singapore Port (SGSIN)</option>
+                        <option class="text-black" value="dubai">🇦🇪 Dubai Port (AEJEA)</option>
+                        <option class="text-black" value="hambantota">🇱🇰 Hambantota Port (LKHBT)</option>
+                    </select>
+                </div>
+                <!-- Destination Port -->
+                <div class="space-y-3">
+                    <label class="block text-sm font-semibold text-ocean-200">
+                        <i class="fas fa-flag-checkered mr-2 text-red-400"></i>Destination Port
+                    </label>
+                    <select id="destinationPort" class="w-full glass rounded-xl px-4 py-3 text-white bg-white/10 border border-white/20 focus:border-ocean-400 focus:ring-2 focus:ring-ocean-400/50 transition-all">
+                        <option class="text-black" value="kochi" selected>🇮🇳 Kochi Port (INCOK)</option>
+                        <option class="text-black" value="mumbai">🇮🇳 Mumbai Port (INMUN)</option>
+                        <option class="text-black" value="chennai">🇮🇳 Chennai Port (INMAA)</option>
+                        <option class="text-black" value="visakhapatnam">🇮🇳 Visakhapatnam Port (INVTZ)</option>
+                        <option class="text-black" value="kolkata">🇮🇳 Kolkata Port (INCCU)</option>
+                        <option class="text-black" value="singapore">🇸🇬 Singapore Port (SGSIN)</option>
+                        <option class="text-black" value="dubai">🇦🇪 Dubai Port (AEJEA)</option>
+                        <option class="text-black" value="hambantota">🇱🇰 Hambantota Port (LKHBT)</option>
+                    </select>
+                </div>
+            </div>     
+            <!-- Route Info Display -->
+            <div class="mt-6 glass rounded-xl p-4 bg-gradient-to-r from-ocean-800/50 to-cyan-800/50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-center">
+                            <div class="text-xs text-ocean-300">Distance</div>
+                            <div id="routeDistance" class="text-lg font-bold text-cyan-400">1,247 nm</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-ocean-300">Est. Duration</div>
+                            <div id="routeDuration" class="text-lg font-bold text-yellow-400">52h 18m</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-ocean-300">Fuel Cost</div>
+                            <div id="fuelCost" class="text-lg font-bold text-green-400">$24,590</div>
+                        </div>
+                    </div>
+                    <button id="updateRoute" class="bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-700 hover:to-indigo-600 px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 flex items-center">
+                        <i class="fas fa-route mr-2"></i>Update Route
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Main Dashboard -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <!-- Interactive Map Panel -->
+            <div class="xl:col-span-2 bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 rounded-2xl p-6" data-aos="fade-right">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-map mr-3 text-yellow-400"></i>
+                        Interactive Route Map
+                        <span id="currentRoute" class="ml-3 text-sm px-3 py-1 bg-gradient-to-r from-green-500/20 to-cyan-500/20 rounded-full border border-green-400/30">
+                            Mumbai → Kochi
+                        </span>
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button id="centerMap" class="glass px-3 py-2 rounded-lg text-sm hover:bg-white/10 transition-all">
+                            <i class="fas fa-crosshairs mr-1"></i>Center
+                        </button>
+                        <button id="fullscreen" class="glass px-3 py-2 rounded-lg text-sm hover:bg-white/10 transition-all">
+                            <i class="fas fa-expand mr-1"></i>Fullscreen
+                        </button>
+                        <button id="3dView" class="glass px-3 py-2 rounded-lg text-sm hover:bg-white/10 transition-all">
+                            <i class="fas fa-cube mr-1"></i>3D View
+                        </button>
+                    </div>
+                </div>
+                <div id="map" class="h-96 xl:h-[500px] rounded-xl map-glow relative overflow-hidden bg-gray-900">
+                    <!-- Map Loading Overlay -->
+                    <div id="mapLoader" class="absolute inset-0 bg-gradient-to-br from-ocean-800 to-ocean-900 z-20 flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                            <div class="text-cyan-300 mb-2">Loading Interactive Map...</div>
+                            <div class="text-xs text-ocean-400">Initializing satellite view</div>
+                        </div>
+                    </div>                   
+                    <!-- Fallback Map Content -->
+                    <div id="mapFallback" class="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-green-800 z-10 hidden">
+                        <div class="absolute inset-0 opacity-30">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <!-- Ocean waves pattern -->
+                                <defs>
+                                    <pattern id="waves" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                                        <path d="M0,10 Q5,5 10,10 T20,10" stroke="rgba(14, 165, 233, 0.3)" stroke-width="0.5" fill="none"/>
+                                        <path d="M0,15 Q5,10 10,15 T20,15" stroke="rgba(6, 182, 212, 0.2)" stroke-width="0.3" fill="none"/>
+                                    </pattern>
+                                </defs>
+                                <rect width="100" height="100" fill="url(#waves)"/>
+                            </svg>
+                        </div>                      
+                        <!-- Route visualization -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="relative w-full h-full max-w-md max-h-md">
+                                <!-- Mumbai marker -->
+                                <div class="absolute top-1/4 left-1/4 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse shadow-lg">
+                                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-white bg-black/50 px-2 py-1 rounded whitespace-nowrap">
+                                        🇮🇳 Mumbai
+                                    </div>
+                                </div>                           
+                                <!-- Kochi marker -->
+                                <div class="absolute bottom-1/4 right-1/4 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse shadow-lg">
+                                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-white bg-black/50 px-2 py-1 rounded whitespace-nowrap">
+                                        🇮🇳 Kochi
+                                    </div>
+                                </div>                            
+                                <!-- Route line -->
+                                <svg class="absolute inset-0 w-full h-full">
+                                    <defs>
+                                        <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.8" />
+                                            <stop offset="100%" style="stop-color:#ef4444;stop-opacity:0.8" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M25,25 Q50,15 75,75" stroke="url(#routeGradient)" stroke-width="3" fill="none" stroke-dasharray="5,5" class="animate-pulse"/>
+                                </svg>                          
+                                <!-- Waypoints -->
+                                <div class="absolute top-1/3 left-1/2 w-2 h-2 bg-cyan-400 rounded-full animate-ping"></div>
+                                <div class="absolute top-2/3 right-1/3 w-2 h-2 bg-cyan-400 rounded-full animate-ping" style="animation-delay: 0.5s;"></div>
+                            </div>
+                        </div>                  
+                        <!-- Map info overlay -->
+                        <div class="absolute bottom-4 left-4 right-4">
+                            <div class="glass rounded-lg p-3 text-center">
+                                <div class="text-sm font-semibold text-white mb-1">📍 Route Visualization</div>
+                                <div class="text-xs text-cyan-300">Mumbai → Kochi Maritime Route</div>
+                                <div class="text-xs text-ocean-300 mt-1">Distance: ~1,247 nautical miles</div>
+                            </div>
+                        </div>
+                    </div>                    
+                    <!-- Map overlay gradient -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-ocean-900/10 to-transparent z-30 pointer-events-none"></div>
+                </div>              
+                <!-- Advanced Map Controls -->
+                <div class="mt-6 space-y-4">
+                    <!-- Layer Controls -->
+                    <div class="flex flex-wrap gap-3">
+                        <button id="weatherLayer" class="glass px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-all flex items-center border border-gray-500/50">
+                            <i class="fas fa-cloud-rain mr-2 text-cyan-400"></i>Weather Overlay
+                        </button>
+                        <button id="windLayer" class="glass px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-all flex items-center border border-gray-500/50">
+                            <i class="fas fa-wind mr-2"></i>Wind Patterns
+                        </button>
+                        <button id="waveLayer" class="glass px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-all flex items-center border border-gray-500/50">
+                            <i class="fas fa-water mr-2"></i>Wave Height
+                        </button>
+                        <button id="trafficLayer" class="glass px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-all flex items-center border border-gray-500/50">
+                            <i class="fas fa-ship mr-2"></i>Vessel Traffic
+                        </button>
+                        <button id="safetyLayer" class="glass px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-all flex items-center border border-gray-500/50">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Safety Zones
+                        </button>
+                    </div>                
+                    <!-- Map Statistics -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 pb-5">
+                        <div class="glass rounded-lg p-3 text-center">
+                            <div class="text-xs text-ocean-300">Zoom Level</div>
+                            <div id="mapZoom" class="text-sm font-bold text-cyan-400">7</div>
+                        </div>
+                        <div class="glass rounded-lg p-3 text-center">
+                            <div class="text-xs text-ocean-300">Map Type</div>
+                            <div id="mapType" class="text-sm font-bold text-cyan-200">Satellite</div>
+                        </div>
+                        <div class="glass rounded-lg p-3 text-center">
+                            <div class="text-xs text-ocean-300">Active Layers</div>
+                            <div id="activeLayers" class="text-sm font-bold text-green-400">0</div>
+                        </div>
+                        <div class="glass rounded-lg p-3 text-center">
+                            <div class="text-xs text-ocean-300">Vessels Visible</div>
+                            <div id="visibleVessels" class="text-sm font-bold text-yellow-400">3</div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-6 pb-6">
+                <!-- Advanced Weather Panel -->
+                <div class="bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 rounded-2xl mt-6 p-6 weather-card" data-aos="fade-left" data-aos-delay="100">
+                    <h3 class="text-xl font-bold mb-4 flex items-center justify-between">
+                        <span class="flex items-center">
+                            <i class="fas fa-cloud-sun mr-3 text-yellow-400"></i>
+                            Weather Intelligence
+                        </span>
+                        <div class="flex items-center space-x-2 text-xs">
+                            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            <span class="text-green-400">Live</span>
+                        </div>
+                    </h3>                   
+                    <!-- Weather Control Buttons -->
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <button id="loadForecast" class="modern-button premium-text">
+                            <i class="fas fa-download mr-2"></i>
+                            Load Forecast
+                        </button>
+                        <button id="refreshWeather" class="modern-button premium-text" style="background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            Refresh
+                        </button>
+                    </div>            
+                    <!-- Weather Timeline Selector -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-semibold text-ocean-200 mb-2">Forecast Timeline</label>
+                        <select id="weatherTimeline" class="w-full glass rounded-lg px-3 py-2 text-sm text-white bg-white/10 border border-white/20 focus:border-ocean-400">
+                            <option class="text-black" value="6h">Next 6 Hours</option>
+                            <option class="text-black" value="24h" selected>Next 24 Hours</option>
+                            <option class="text-black" value="72h">Next 3 Days</option>
+                            <option class="text-black" value="168h">Next 7 Days</option>
+                        </select>
+                    </div>            
+                    <div id="forecastData" class="text-sm text-ocean-200 mb-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-ocean-300">Current Conditions:</span>
+                                <span class="text-cyan-400">Loading...</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-ocean-300">Wind Speed:</span>
+                                <span id="currentWind" class="text-yellow-400">12.8 kts</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-ocean-300">Wave Height:</span>
+                                <span id="currentWaves" class="text-cyan-200">2.4m</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-ocean-300">Visibility:</span>
+                                <span id="currentVisibility" class="text-green-400">15.2 km</span>
+                            </div>
+                        </div>
+                    </div>     
+                    <!-- Enhanced Weather Chart -->
+                    <div class="bg-black/20 rounded-lg p-3">
+                        <canvas id="weatherChart" class="w-full h-32"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Control Panel -->
+            <div class="space-y-6">
+                <!-- Advanced Speed Optimization Panel -->
+                <div class="bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 rounded-2xl p-6 weather-card" data-aos="fade-left" data-aos-delay="200">
+                    <h3 class="text-xl font-bold mb-4 flex items-center justify-between">
+                        <span class="flex items-center">
+                            <i class="fas fa-tachometer-alt mr-3 text-yellow-400"></i>
+                            Route Optimization
+                        </span>
+                        <div class="text-xs px-2 py-1 bg-green-500/20 rounded-full border border-green-400/30">
+                            AI Powered
+                        </div>
+                    </h3>               
+                    <!-- Optimization Parameters -->
+                    <div class="space-y-3 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-ocean-200 mb-1">Optimization Priority</label>
+                            <select id="optimizationMode" class="w-full glass rounded-lg px-3 py-2 text-sm text-white bg-white/10 border border-white/20">
+                                <option class="text-black" value="fuel">⛽ Fuel Efficiency</option>
+                                <option class="text-black" value="time">⏱️ Fastest Route</option>
+                                <option class="text-black" value="safety">🛡️ Safety Priority</option>
+                                <option class="text-black" value="balanced" selected>⚖️ Balanced</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-ocean-200 mb-1">Max Speed Limit</label>
+                            <input type="range" id="speedLimit" min="8" max="25" value="18" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider">
+                            <div class="flex justify-between text-xs text-ocean-300 mt-1">
+                                <span>8 kts</span>
+                                <span id="speedValue" class="text-green-400 font-semibold">18 kts</span>
+                                <span>25 kts</span>
+                            </div>
+                        </div>
+                    </div>                
+                    <button id="optimizeRoute" class="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 mb-4 flex items-center justify-center">
+                        <i class="fas fa-rocket mr-2"></i>
+                        <span id="optimizeText">Optimize Speed Profile</span>
+                    </button>              
+                    <div id="optimizationResult" class="text-sm text-ocean-200 mb-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Fuel Savings:</span>
+                                <span id="fuelSavings" class="text-green-400 font-semibold">15.3%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Time Saved:</span>
+                                <span id="timeSaved" class="text-cyan-200 font-semibold">2h 15m</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Cost Reduction:</span>
+                                <span id="costSaved" class="text-yellow-400 font-semibold">$3,780</span>
+                            </div>
+                        </div>
+                    </div>                   
+                    <!-- Enhanced Fuel Efficiency Gauge -->
+                    <div class="text-center">
+                        <div class="relative w-32 h-32 mx-auto mb-2">
+                            <svg class="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" stroke="rgba(34, 197, 94, 0.2)" stroke-width="6" fill="none"></circle>
+                                <circle id="efficiencyCircle" cx="50" cy="50" r="40" stroke="url(#gradient)" stroke-width="6" fill="none" stroke-dasharray="251.2" stroke-dashoffset="188.4" stroke-linecap="round">
+                                    <animate attributeName="stroke-dashoffset" dur="2s" values="251.2;188.4" begin="0s"/>
+                                </circle>
+                                <defs>
+                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <span class="text-2xl font-bold text-green-400">25%</span>
+                                    <div class="text-xs text-ocean-300">Efficiency</div>
+                                </div>
+                            </div>
+                        </div>                     
+                        <!-- Optimization Status Indicators -->
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="text-center">
+                                <div class="w-2 h-2 bg-green-400 rounded-full mx-auto mb-1"></div>
+                                <div class="text-green-400">Optimized</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-2 h-2 bg-yellow-400 rounded-full mx-auto mb-1 animate-pulse"></div>
+                                <div class="text-yellow-400">Processing</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-2 h-2 bg-cyan-200 rounded-full mx-auto mb-1"></div>
+                                <div class="text-cyan-200">Safe Route</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Enhanced Alerts Panel -->
+                <div class="bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 rounded-2xl p-6 weather-card" data-aos="fade-left" data-aos-delay="300">
+                    <h3 class="text-xl font-bold mb-4 flex items-center justify-between">
+                        <span class="flex items-center">
+                            <i class="fas fa-shield-alt mr-3 text-yellow-400"></i>
+                            Safety & Alerts
+                        </span>
+                        <div id="alertBadge" class="text-xs px-2 py-1 bg-green-500/20 rounded-full border border-green-400/30 text-green-400">
+                            All Clear
+                        </div>
+                    </h3>                
+                    <!-- Popup Position Toggle -->
+                    <div class="mb-4 flex items-center justify-between">
+                        <span class="text-sm text-ocean-300">Alert Notifications:</span>
+                        <div id="positionToggle" class="position-toggle">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            <span id="positionText">Top Right</span>
+                        </div>
+                    </div>                
+                    <!-- Alert Types Selector -->
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <button id="weatherAlerts" class="glass px-3 py-2 rounded-lg text-xs flex items-center justify-center border border-yellow-500/50 relative" data-type="weather">
+                            <i class="fas fa-cloud-bolt mr-1 text-yellow-400"></i>
+                            Weather
+                            <span class="checkmark absolute right-2 top-2 hidden"><i class="fas fa-check text-green-500"></i></span>
+                        </button>
+                        <button id="navigationAlerts" class="glass px-3 py-2 rounded-lg text-xs flex items-center justify-center border border-cyan-200/50 relative" data-type="navigation">
+                            <i class="fas fa-compass mr-1 text-cyan-200"></i>
+                            Navigation
+                            <span class="checkmark absolute right-2 top-2 hidden"><i class="fas fa-check text-green-500"></i></span>
+                        </button>
+                        <button id="securityAlerts" class="glass px-3 py-2 rounded-lg text-xs flex items-center justify-center border border-red-400/50 relative" data-type="security">
+                            <i class="fas fa-lock mr-1 text-red-400"></i>
+                            Security
+                            <span class="checkmark absolute right-2 top-2 hidden"><i class="fas fa-check text-green-500"></i></span>
+                        </button>
+                        <button id="mechanicalAlerts" class="glass px-3 py-2 rounded-lg text-xs flex items-center justify-center border border-gray-400/50 relative" data-type="mechanical">
+                            <i class="fas fa-cog mr-1 text-gray-400"></i>
+                            Mechanical
+                            <span class="checkmark absolute right-2 top-2 hidden"><i class="fas fa-check text-green-500"></i></span>
+                        </button>
+                    </div>                    
+                    <button id="loadAlerts" class="w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 mb-4 flex items-center justify-center">
+                        <i class="fas fa-search mr-2"></i>
+                        Scan for Alerts
+                    </button>                    
+                    <div id="alertsData" class="text-sm text-ocean-200 space-y-2">
+                        <div class="flex items-center justify-center py-6 text-green-400">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            No active alerts detected
+                        </div>
+                    </div>                    
+                    <!-- Alert Statistics -->
+                    <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+                        <div class="glass rounded-lg p-2 text-center">
+                            <div class="text-yellow-400 font-bold" id="warningCount">0</div>
+                            <div class="text-ocean-300">Warnings</div>
+                        </div>
+                        <div class="glass rounded-lg p-2 text-center">
+                            <div class="text-red-400 font-bold" id="criticalCount">0</div>
+                            <div class="text-ocean-300">Critical</div>
+                        </div>
+                    </div>
+                </div>                
+                <!-- Real-time Vessel Status -->
+                <div class="bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 rounded-2xl p-6 weather-card" data-aos="fade-left" data-aos-delay="400">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-ship mr-3 text-yellow-400"></i>
+                        Vessel Status
+                    </h3>                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 glass rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-400 rounded-full mr-3 animate-pulse"></div>
+                                <div>
+                                    <div class="text-sm font-semibold">Engine Status</div>
+                                    <div class="text-xs text-ocean-300">All systems operational</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-check text-green-400"></i>
+                        </div>                      
+                        <div class="flex justify-between items-center p-3 glass rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-cyan-200 rounded-full mr-3"></div>
+                                <div>
+                                    <div class="text-sm font-semibold">Navigation</div>
+                                    <div class="text-xs text-ocean-300">GPS signal strong</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-satellite text-cyan-200"></i>
+                        </div>                        
+                        <div class="flex justify-between items-center p-3 glass rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-yellow-400 rounded-full mr-3"></div>
+                                <div>
+                                    <div class="text-sm font-semibold">Fuel Level</div>
+                                    <div class="text-xs text-ocean-300">78% remaining</div>
+                                </div>
+                            </div>
+                            <span class="text-yellow-400 text-sm font-bold">78%</span>
+                        </div>                        
+                        <div class="flex justify-between items-center p-3 glass rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-purple-400 rounded-full mr-3"></div>
+                                <div>
+                                    <div class="text-sm font-semibold">Communication</div>
+                                    <div class="text-xs text-ocean-300">Radio & satellite active</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-broadcast-tower text-purple-400"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Advanced Analytics and Visualization Section -->
+        <div class="mt-12 space-y-8">
+            <!-- Real-time Data Dashboard -->
+            <div class="bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 rounded-2xl p-8" data-aos="fade-up">
+                <h2 class="text-3xl font-bold mb-8 flex items-center">
+                    <i class="fas fa-chart-area mr-4 text-yellow-400"></i>
+                    <span class="gradient-text">Advanced Analytics Dashboard</span>
+                </h2>           
+                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                    <!-- Performance Chart -->
+                    <div class="lg:col-span-1">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-tachometer-alt mr-2 text-green-400"></i>
+                            Performance Metrics
+                        </h3>
+                        <div class="bg-black/20 rounded-xl p-4 h-64">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>                
+                    <!-- Weather Trends -->
+                    <div class="lg:col-span-1">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-wind mr-2 text-cyan-400"></i>
+                            Weather Trends
+                        </h3>
+                        <div class="bg-black/20 rounded-xl p-4 h-64">
+                            <canvas id="weatherTrendChart"></canvas>
+                        </div>
+                    </div>                   
+                    <!-- Fuel Consumption -->
+                    <div class="lg:col-span-2 xl:col-span-1">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-gas-pump mr-2 text-yellow-400"></i>
+                            Fuel Analysis
+                        </h3>
+                        <div class="bg-black/20 rounded-xl p-4 h-64">
+                            <canvas id="fuelChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>            
+            <!-- Interactive Timeline -->
+            <div class="bg-slate-900 border-2 border-yellow-400 shadow-md shadow-yellow-400/30 rounded-2xl p-8" data-aos="fade-up" data-aos-delay="200">
+                <h3 class="text-2xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-timeline mr-3 text-yellow-400"></i>
+                    Interactive Route Timeline
+                </h3>           
+                <!-- Timeline Controls -->
+                <div class="flex flex-wrap gap-4 mb-16">
+                    <button class="glass px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-all flex items-center">
+                        <i class="fas fa-play mr-2"></i>Play Timeline
+                    </button>
+                    <button class="glass px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-all flex items-center">
+                        <i class="fas fa-fast-forward mr-2"></i>2x Speed
+                    </button>
+                    <button class="glass px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-all flex items-center">
+                        <i class="fas fa-history mr-2"></i>Reset
+                    </button>
+                    <div class="flex items-center space-x-2 glass px-4 py-2 rounded-lg">
+                        <span class="text-sm">Current Time:</span>
+                        <span id="timelineTime" class="text-cyan-400 font-mono">08:00 UTC</span>
+                    </div>
+                </div>            
+                <!-- Enhanced Timeline Visualization -->
+                <div class="space-y-6">
+                    <!-- Timeline Progress Bar -->
+                    <div class="relative">
+                        <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div id="timelineProgress" class="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded-full transition-all duration-1000" style="width: 25%"></div>
+                        </div>
+                        <div class="absolute timeline-current-indicator transform -translate-x-1/2 transition-all duration-1000 flex flex-col items-center" style="left: 25%; bottom: 100%;">
+                            <div class="glass px-3 py-1 rounded-lg text-xs mb-1 text-center" style="white-space: normal;">
+                                <i class="fas fa-ship mr-1"></i>Current Position
+                            </div>
+                            <svg width="18" height="10" viewBox="0 0 18 10" fill="#38bdf8" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 5px;">
+                                <polygon points="1,1 9,9 17,1" />
+                            </svg>
+                        </div>
+                    </div>              
+                    <!-- Route Waypoints -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex items-center space-x-4 p-4 glass rounded-xl">
+                            <div class="w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold">Mumbai Port</div>
+                                <div class="text-xs text-ocean-300">Departure: 08:00 UTC</div>
+                                <div class="text-xs text-green-400">✓ Completed</div>
+                            </div>
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        </div>                        
+                        <div class="flex items-center space-x-4 p-4 glass rounded-xl border border-yellow-400/30">
+                            <div class="w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold">Goa Transit</div>
+                                <div class="text-xs text-ocean-300">ETA: 18:30 UTC</div>
+                                <div class="text-xs text-yellow-400">⏳ In Progress</div>
+                            </div>
+                            <i class="fas fa-clock text-yellow-400"></i>
+                        </div>                        
+                        <div class="flex items-center space-x-4 p-4 glass rounded-xl opacity-60">
+                            <div class="w-4 h-4 bg-gray-400 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold">Kochi Port</div>
+                                <div class="text-xs text-ocean-300">ETA: 14:45 UTC+1</div>
+                                <div class="text-xs text-gray-400">⏱ Pending</div>
+                            </div>
+                            <i class="fas fa-hourglass text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                        </div>
+                        <div class="text-sm text-gray-400">●</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Footer -->
+    <footer class="mt-16 text-center bg-slate-900 border-t-2 border-yellow-400 shadow-md shadow-yellow-400/30 p-8 w-full" data-aos="fade-up">
+        <div class="flex items-center justify-center mb-4">
+            <i class="fas fa-anchor text-2xl text-yellow-400 mr-3 animate-wave"></i>
+            <span class="text-xl font-bold gradient-text">Weather Engine Maritime</span>
+        </div>
+        <p class="text-yellow-300 mb-4">
+            Advanced Maritime Intelligence Platform • MariTHON Hackathon 2025
+        </p>
+        <div class="flex justify-center space-x-6 text-sm text-yellow-400">
+            <div class="flex items-center">
+                <i class="fas fa-code mr-2"></i>
+                FastAPI + Python
+            </div>
+            <div class="flex items-center">
+                <i class="fas fa-palette mr-2"></i>
+                TailwindCSS + HTML5
+            </div>
+            <div class="flex items-center">
+                <i class="fas fa-map-marked-alt mr-2"></i>
+                Leaflet.js
+            </div>
+        </div>
+    </footer>
+    <script>
+        // Global variables
+        let map;
+        let weatherChart;
+        let performanceChart;
+        let weatherTrendChart;
+        let fuelChart;
+        let activeMapLayers = [];
+        const API_BASE = 'http://localhost:8000';        
+        // Port coordinates database
+        const PORTS = {
+            mumbai: { name: 'Mumbai Port (INMUN)', coords: [19.0760, 72.8777], country: '🇮🇳', code: 'INMUN' },
+            chennai: { name: 'Chennai Port (INMAA)', coords: [13.0827, 80.2707], country: '🇮🇳', code: 'INMAA' },
+            visakhapatnam: { name: 'Visakhapatnam Port (INVTZ)', coords: [17.6868, 83.2185], country: '🇮🇳', code: 'INVTZ' },
+            kolkata: { name: 'Kolkata Port (INCCU)', coords: [22.5726, 88.3639], country: '🇮🇳', code: 'INCCU' },
+            singapore: { name: 'Singapore Port (SGSIN)', coords: [1.2966, 103.8006], country: '🇸🇬', code: 'SGSIN' },
+            dubai: { name: 'Dubai Port (AEJEA)', coords: [25.2769, 55.3073], country: '🇦🇪', code: 'AEJEA' },
+            hambantota: { name: 'Hambantota Port (LKHBT)', coords: [6.1240, 81.1185], country: '🇱🇰', code: 'LKHBT' },
+            kochi: { name: 'Kochi Port (INCOK)', coords: [9.9312, 76.2673], country: '🇮🇳', code: 'INCOK' }
+        };
+        // Initialize AOS animations
+        AOS.init({
+            duration: 1000,
+            once: true,
+            offset: 100
+        });
+        // Live time display
+        // Enhanced metrics animation with more realistic values
+        function animateMetrics() {
+            const time = Date.now();            
+            // Wave height (1.8 - 3.2m)
+            const waveHeight = (2.0 + Math.sin(time / 10000) * 0.6 + Math.random() * 0.4).toFixed(1);
+            document.getElementById('waveHeight').textContent = waveHeight + 'm';
+            document.getElementById('currentWaves').textContent = waveHeight + 'm';            
+            // Wind speed (8 - 18 kts)
+            const windSpeed = (13 + Math.cos(time / 8000) * 3 + Math.random() * 2).toFixed(1);
+            document.getElementById('windSpeed').textContent = windSpeed + ' kts';
+            document.getElementById('currentWind').textContent = windSpeed + ' kts';            
+            // Fuel savings (12 - 20%)
+            const fuelSavings = (15 + Math.sin(time / 12000) * 2.5 + Math.random() * 1).toFixed(1);
+            document.getElementById('fuelSavings').textContent = fuelSavings + '%';            
+            // Visibility (10 - 25 km)
+            const visibility = (15 + Math.cos(time / 15000) * 5 + Math.random() * 3).toFixed(1);
+            document.getElementById('currentVisibility').textContent = visibility + ' km';            
+            // Update optimization results
+            document.getElementById('fuelSavings').textContent = fuelSavings + '%';
+            document.getElementById('timeSaved').textContent = (2 + Math.random() * 1).toFixed(0) + 'h ' + (Math.random() * 59).toFixed(0) + 'm';
+            document.getElementById('costSaved').textContent = '$' + (3500 + Math.random() * 1000).toFixed(0);
+        }
+        setInterval(animateMetrics, 2000);
+        animateMetrics();
+        // Enhanced map initialization with multiple layers
+        function initMap() {
+            try {
+                // Show loader initially
+                const loader = document.getElementById('mapLoader');
+                const fallback = document.getElementById('mapFallback');                
+                if (loader) loader.style.display = 'flex';
+                if (fallback) fallback.style.display = 'none';
+                map = L.map('map', {
+                    zoomControl: true,
+                    scrollWheelZoom: true,
+                    doubleClickZoom: true,
+                    boxZoom: true,
+                    keyboard: true,
+                    dragging: true,
+                    tap: true,
+                    touchZoom: true,
+                    preferCanvas: true
+                }).setView([15.0, 74.0], 6);                
+                // Multiple tile layer options with fallbacks
+                const OPENWEATHER_API_KEY = "3662ed76c1566a5fef2ac5a9d71c820a";
+                const tileLayers = {
+                    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: '© Esri',
+                        maxZoom: 19,
+                        errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiBmaWxsPSIjMGY0Yzc1Ii8+CjwvSXZnPgo='
+                    }),
+                    ocean: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '© OpenStreetMap © CartoDB',
+                        subdomains: 'abcd',
+                        maxZoom: 19,
+                        errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiBmaWxsPSIjMGY0Yzc1Ii8+CjwvSXZnPgo='
+                    }),
+                    openstreet: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap',
+                        maxZoom: 19,
+                        errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiBmaWxsPSIjMGY0Yzc1Ii8+CjwvSXZnPgo='
+                    }),
+                    precipitation: L.tileLayer('https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}', {
+                        attribution: '© OpenWeatherMap',
+                        maxZoom: 19,
+                        opacity: 0.6,
+                        errorTileUrl: 'data:image/svg+xml;base64,...'
+                    }),
+                    wind: L.tileLayer('https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}', {
+                        attribution: '© OpenWeatherMap',
+                        maxZoom: 19,
+                        opacity: 0.6,
+                        errorTileUrl: 'data:image/svg+xml;base64,...'
+                    })
+                };
+                // Try satellite first, fallback to ocean theme
+                let currentLayer = tileLayers.satellite;
+                currentLayer.addTo(map);                
+                // Handle tile loading errors
+                currentLayer.on('tileerror', function() {
+                    console.warn('Satellite tiles failed, switching to ocean theme...');
+                    map.removeLayer(currentLayer);
+                    currentLayer = tileLayers.ocean;
+                    currentLayer.addTo(map);                    
+                    currentLayer.on('tileerror', function() {
+                        console.warn('Ocean tiles failed, switching to OpenStreetMap...');
+                        map.removeLayer(currentLayer);
+                        currentLayer = tileLayers.openstreet;
+                        currentLayer.addTo(map);                        
+                        currentLayer.on('tileerror', function() {
+                            console.error('All tile sources failed, showing fallback...');
+                            showMapFallback();
+                        });
+                    });
+                });
+                // Map ready event
+                map.whenReady(function() {
+                    console.log('Map successfully initialized');
+                    setTimeout(() => {
+                        if (loader) loader.style.display = 'none';
+                        updateRouteDisplay();
+                        drawRoute();
+                    }, 1000);
+                });
+                // Map event listeners
+                map.on('zoomend', () => {
+                    document.getElementById('mapZoom').textContent = map.getZoom();
+                });                
+                map.on('moveend', () => {
+                    console.log('Map moved to:', map.getCenter());
+                });
+                // Load timeout fallback
+                setTimeout(() => {
+                    if (loader && loader.style.display !== 'none') {
+                        console.warn('Map loading timeout, showing fallback');
+                        showMapFallback();
+                    }
+                }, 5000);                
+            } catch (error) {
+                console.error('Map initialization failed:', error);
+                showMapFallback();
+            }
+        }
+        // Show fallback map visualization
+        function showMapFallback() {
+            const loader = document.getElementById('mapLoader');
+            const fallback = document.getElementById('mapFallback');            
+            if (loader) loader.style.display = 'none';
+            if (fallback) {
+                fallback.style.display = 'block';
+                fallback.classList.remove('hidden');
+            }            
+            // Update map type indicator
+            document.getElementById('mapType').textContent = 'Fallback';            
+            // Animate fallback elements
+            setTimeout(() => {
+                const markers = fallback.querySelectorAll('.animate-pulse');
+                markers.forEach((marker, index) => {
+                    marker.style.animationDelay = `${index * 0.5}s`;
+                });
+            }, 500);
+        }
+        // Update route display and calculations
+        function updateRouteDisplay() {
+            const sourcePort = document.getElementById('sourcePort').value;
+            const destPort = document.getElementById('destinationPort').value;            
+            const source = PORTS[sourcePort];
+            const destination = PORTS[destPort];            
+            if (source && destination) {
+                document.getElementById('currentRoute').textContent = 
+                    `${source.name.split('(')[0].trim()} → ${destination.name.split('(')[0].trim()}`;                
+                // Calculate distance (rough estimation)
+                const distance = calculateDistance(source.coords, destination.coords);
+                document.getElementById('routeDistance').textContent = distance.toFixed(0) + ' nm';                
+                // Calculate duration (based on 18 kts average)
+                const duration = distance / 18;
+                const hours = Math.floor(duration);
+                const minutes = Math.floor((duration - hours) * 60);
+                document.getElementById('routeDuration').textContent = `${hours}h ${minutes}m`;                
+                // Calculate fuel cost (rough estimation)
+                const fuelCost = distance * 42; // $42 per nautical mile rough estimate
+                document.getElementById('fuelCost').textContent = '$' + fuelCost.toFixed(0);
+            }
+        }
+        // Calculate distance between two coordinates (Haversine formula)
+        function calculateDistance(coord1, coord2) {
+            const R = 3440; // Earth's radius in nautical miles
+            const lat1 = coord1[0] * Math.PI / 180;
+            const lat2 = coord2[0] * Math.PI / 180;
+            const deltaLat = (coord2[0] - coord1[0]) * Math.PI / 180;
+            const deltaLon = (coord2[1] - coord1[1]) * Math.PI / 180;
+            const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+                    Math.cos(lat1) * Math.cos(lat2) *
+                    Math.sin(deltaLon/2) * Math.sin(deltaLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        // Enhanced route drawing
+        function drawRoute() {
+            // Show immediate fallback if map is not ready
+            if (!map) {
+                console.log('Map not ready, showing route in fallback mode');
+                showMapFallback();
+                return;
+            }            
+            try {
+                // Clear existing route
+                map.eachLayer(layer => {
+                    if (layer instanceof L.Marker || layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
+                        map.removeLayer(layer);
+                    }
+                });
+                const sourcePort = document.getElementById('sourcePort').value;
+                const destPort = document.getElementById('destinationPort').value;                
+                const source = PORTS[sourcePort];
+                const destination = PORTS[destPort];                
+                if (!source || !destination) {
+                    console.warn('Source or destination port not found');
+                    return;
+                }
+                // Add enhanced markers
+                const sourceIcon = L.divIcon({
+                    html: `<div class="bg-green-500 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold animate-pulse shadow-lg">S</div>`,
+                    iconSize: [24, 24],
+                    className: 'custom-marker'
+                });                
+                const destIcon = L.divIcon({
+                    html: `<div class="bg-red-500 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold shadow-lg">D</div>`,
+                    iconSize: [24, 24],
+                    className: 'custom-marker'
+                });
+                const sourceMarker = L.marker(source.coords, {icon: sourceIcon}).addTo(map)
+                    .bindPopup(`
+                        <div class="text-center p-2 min-w-48">
+                            <h3 class="font-bold text-lg text-green-600">${source.country} ${source.name}</h3>
+                            <p class="text-sm text-gray-600">Departure Port</p>
+                            <p class="text-xs text-gray-500">${source.coords[0].toFixed(4)}°N, ${source.coords[1].toFixed(4)}°E</p>
+                            <p class="text-xs font-mono bg-gray-100 px-2 py-1 rounded mt-1">${source.code}</p>
+                            <div class="mt-2 text-xs text-green-600">🚢 Ready for departure</div>
+                        </div>
+                    `);
+                const destMarker = L.marker(destination.coords, {icon: destIcon}).addTo(map)
+                    .bindPopup(`
+                        <div class="text-center p-2 min-w-48">
+                            <h3 class="font-bold text-lg text-red-600">${destination.country} ${destination.name}</h3>
+                            <p class="text-sm text-gray-600">Destination Port</p>
+                            <p class="text-xs text-gray-500">${destination.coords[0].toFixed(4)}°N, ${destination.coords[1].toFixed(4)}°E</p>
+                            <p class="text-xs font-mono bg-gray-100 px-2 py-1 rounded mt-1">${destination.code}</p>
+                            <div class="mt-2 text-xs text-red-600">⚓ Arrival expected</div>
+                        </div>
+                    `);
+                // Create route with waypoints
+                const waypoints = generateWaypoints(source.coords, destination.coords);
+                const fullRoute = [source.coords, ...waypoints, destination.coords];
+                // Add route line with animation
+                const routeLine = L.polyline(fullRoute, {
+                    color: '#0ea5e9',
+                    weight: 4,
+                    opacity: 0.8,
+                    dashArray: '10, 10',
+                    className: 'route-line'
+                }).addTo(map);
+                // Add waypoint markers
+                waypoints.forEach((point, index) => {
+                    const waypointIcon = L.divIcon({
+                        html: `<div class="bg-cyan-500 w-4 h-4 rounded-full border border-white shadow-md animate-ping"></div>`,
+                        iconSize: [16, 16],
+                        className: 'waypoint-marker'
+                    });                    
+                    L.marker(point, {icon: waypointIcon}).addTo(map)
+                        .bindPopup(`
+                            <div class="text-center">
+                                <strong class="text-cyan-600">Waypoint ${index + 1}</strong>
+                                <br><small class="text-gray-500">${point[0].toFixed(3)}°N, ${point[1].toFixed(3)}°E</small>
+                                <br><small class="text-cyan-600">Navigation checkpoint</small>
+                            </div>
+                        `);
+                });
+                // Fit map to show full route
+                map.fitBounds(fullRoute, { padding: [20, 20] });                
+                // Update map status
+                document.getElementById('mapType').textContent = 'Satellite';                
+                console.log(`Route drawn: ${source.name} → ${destination.name}`);                
+            } catch (error) {
+                console.error('Error drawing route:', error);
+                showMapFallback();
+            }
+        }
+        // Generate waypoints between source and destination
+        function generateWaypoints(start, end) {
+            const waypoints = [];
+            const steps = 3; // Number of waypoints            
+            for (let i = 1; i <= steps; i++) {
+                const ratio = i / (steps + 1);
+                const lat = start[0] + (end[0] - start[0]) * ratio;
+                const lon = start[1] + (end[1] - start[1]) * ratio;                
+                // Add some variation to make route more realistic
+                const variation = 0.5;
+                const latVar = (Math.random() - 0.5) * variation;
+                const lonVar = (Math.random() - 0.5) * variation;                
+                waypoints.push([lat + latVar, lon + lonVar]);
+            }            
+            return waypoints;
+        }
+        // Enhanced weather chart
+        function initWeatherChart() {
+            const ctx = document.getElementById('weatherChart').getContext('2d');
+            weatherChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Now', '+6h', '+12h', '+18h', '+24h'],
+                    datasets: [
+                        {
+                            label: 'Wave Height (m)',
+                            data: [2.1, 2.4, 2.8, 2.5, 2.2],
+                            borderColor: '#0ea5e9',
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Wind Speed (m/s)',
+                            data: [8.5, 9.2, 10.1, 9.8, 8.9],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            labels: { color: '#94a3b8', font: { size: 10 } }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: '#94a3b8', font: { size: 10 } },
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                        },
+                        y: { 
+                            ticks: { color: '#94a3b8', font: { size: 10 } },
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+        // Initialize all advanced charts
+        function initPerformanceChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Fuel Efficiency', 'Speed Optimization', 'Route Safety', 'Weather Adaptation', 'Cost Effectiveness', 'Time Management'],
+                    datasets: [{
+                        label: 'Current Performance',
+                        data: [85, 92, 78, 88, 90, 84],
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        borderColor: '#22c55e',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#22c55e',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: '#94a3b8', font: { size: 10 } },
+                            grid: { color: 'rgba(148, 163, 184, 0.2)' },
+                            pointLabels: { color: '#94a3b8', font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+        function initWeatherTrendChart() {
+            const ctx = document.getElementById('weatherTrendChart').getContext('2d');
+            weatherTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+                    datasets: [
+                        {
+                            label: 'Temperature (°C)',
+                            data: [24, 26, 28, 27, 25, 23, 24],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Humidity (%)',
+                            data: [65, 70, 75, 73, 68, 62, 66],
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#94a3b8', font: { size: 10 } }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: '#94a3b8', font: { size: 10 } },
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                        },
+                        y: { 
+                            ticks: { color: '#94a3b8', font: { size: 10 } },
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+        function initFuelChart() {
+            const ctx = document.getElementById('fuelChart').getContext('2d');
+            fuelChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Optimized Route', 'Engine Efficiency', 'Weather Routing', 'Speed Control', 'Waste'],
+                    datasets: [{
+                        data: [35, 25, 20, 15, 5],
+                        backgroundColor: [
+                            '#22c55e',
+                            '#3b82f6',
+                            '#8b5cf6',
+                            '#f59e0b',
+                            '#ef4444'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+        // Enhanced API functions
+        async function checkAPI() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();                
+                document.getElementById('apiStatus').innerHTML = `
+                    <i class="fas fa-check text-green-400 mr-2"></i>
+                    <span class="text-green-400">Online</span>
+                `;
+            } catch (error) {
+                document.getElementById('apiStatus').innerHTML = `
+                    <i class="fas fa-times text-red-400 mr-2"></i>
+                    <span class="text-red-400">Offline</span>
+                `;
+            }
+        }
+        // Enhanced forecast loading with timeline support
+        async function loadForecast() {
+            const button = document.getElementById('loadForecast');
+            const resultDiv = document.getElementById('forecastData');
+            const timeline = document.getElementById('weatherTimeline').value;            
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
+            button.disabled = true;
+            try {
+                const response = await fetch(`${API_BASE}/route_forecast`);
+                const data = await response.json();                
+                if (data && Array.isArray(data) && data.length > 0) {
+                    const firstSegment = data[0];
+                    const forecastTimes = firstSegment.forecast?.times || [];                    
+                    // Filter based on timeline
+                    const timelineHours = parseInt(timeline.replace('h', ''));
+                    const now = new Date();
+                    const filteredForecast = forecastTimes.filter(point => {
+                        const pointTime = new Date(point.t_iso);
+                        const hoursDiff = (pointTime - now) / (1000 * 60 * 60);
+                        return hoursDiff >= 0 && hoursDiff <= timelineHours;
+                    });
+                    const summary = filteredForecast.slice(0, 8).map(point => 
+                        `<div class="flex justify-between items-center py-2 border-b border-ocean-700/30">
+                            <span class="text-xs">${new Date(point.t_iso).toLocaleDateString()}</span>
+                            <span class="text-ocean-300">${point.wind_deg}°</span>
+                            <span class="text-sm font-semibold text-cyan-400">${point.wind_speed_ms.toFixed(1)} m/s</span>
+                        </div>`
+                    ).join('');                    
+                    resultDiv.innerHTML = `
+                        <div class="space-y-2 mb-3">
+                            <div class="flex justify-between">
+                                <span class="text-ocean-300">Forecast Period:</span>
+                                <span class="text-cyan-400">${timeline}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-ocean-300">Data Points:</span>
+                                <span class="text-yellow-400">${filteredForecast.length}</span>
+                            </div>
+                        </div>
+                        ${summary}
+                    `;
+                    // Update weather chart with filtered data
+                    const chartData = filteredForecast.slice(0, 5).map(point => 
+                        point.waves?.Hs_m || 2.0
+                    );
+                    if (weatherChart && chartData.length > 0) {
+                        weatherChart.data.datasets[0].data = chartData;
+                        weatherChart.update();
+                    }
+                } else {
+                    throw new Error('No forecast data');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="text-red-400 flex items-center mb-2">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Failed to load forecast. Using mock data.
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-ocean-300">Current Conditions:</span>
+                            <span class="text-cyan-400">Fair weather</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-ocean-300">Wind Speed:</span>
+                            <span class="text-yellow-400">12.8 kts</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-ocean-300">Wave Height:</span>
+                            <span class="text-cyan-200">2.4m</span>
+                        </div>
+                    </div>
+                `;
+            } finally {
+                button.innerHTML = '<i class="fas fa-download mr-2"></i>Load Forecast';
+                button.disabled = false;
+            }
+        }
+        // Enhanced optimization with parameters
+        async function optimizeRoute() {
+            const button = document.getElementById('optimizeRoute');
+            const resultDiv = document.getElementById('optimizationResult');
+            const optimizeText = document.getElementById('optimizeText');
+            const mode = document.getElementById('optimizationMode').value;
+            const speedLimit = parseInt(document.getElementById('speedLimit').value);            
+            optimizeText.textContent = 'Optimizing...';
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span id="optimizeText">Optimizing...</span>';
+            button.disabled = true;
+            try {
+                const sourcePort = document.getElementById('sourcePort').value;
+                const destPort = document.getElementById('destinationPort').value;
+                const source = PORTS[sourcePort];
+                const destination = PORTS[destPort];
+                // Create route segments based on selected ports
+                const optimizeRequest = {
+                    route: [
+                        { segment_id: 1, lat: source.coords[0], lon: source.coords[1], dist_nm: 0 },
+                        { segment_id: 2, lat: (source.coords[0] + destination.coords[0]) / 2, lon: (source.coords[1] + destination.coords[1]) / 2, dist_nm: 200 },
+                        { segment_id: 3, lat: destination.coords[0], lon: destination.coords[1], dist_nm: 400 }
+                    ],
+                    vessel: {
+                        name: `Express Vessel ${source.code} → ${destination.code}`,
+                        base_speed_kn: speedLimit
+                    },
+                    constraints: {
+                        deadline_iso: null,
+                        optimization_mode: mode,
+                        max_speed_kn: speedLimit
+                    }
+                };
+                const response = await fetch(`${API_BASE}/optimize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(optimizeRequest)
+                });                
+                const data = await response.json();                
+                if (data.speed_profile) {
+                    const savings = data.savings_pct || 15.3;
+                    const fuel = data.total_fuel || 145.8;                    
+                    resultDiv.innerHTML = `
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Fuel Savings:</span>
+                                <span id="fuelSavings" class="text-green-400 font-semibold">${savings.toFixed(1)}%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Time Saved:</span>
+                                <span id="timeSaved" class="text-cyan-200 font-semibold">2h 15m</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Cost Reduction:</span>
+                                <span id="costSaved" class="text-yellow-400 font-semibold">$3,780</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Total Fuel:</span>
+                                <span class="text-white">${fuel.toFixed(1)} tons</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Optimization Mode:</span>
+                                <span class="text-purple-400 text-xs">${mode.toUpperCase()}</span>
+                            </div>
+                        </div>
+                    `;
+                    // Update efficiency gauge
+                    updateEfficiencyGauge(Math.min(savings, 50));
+                } else {
+                    throw new Error('No optimization data');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="text-red-400 flex items-center mb-2">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Optimization failed. Using mock results.
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span>Fuel Savings:</span>
+                            <span class="text-green-400 font-semibold">15.3%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Time Saved:</span>
+                            <span class="text-cyan-200 font-semibold">2h 15m</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Cost Reduction:</span>
+                            <span class="text-yellow-400 font-semibold">$3,780</span>
+                        </div>
+                    </div>
+                `;
+                updateEfficiencyGauge(25);
+            } finally {
+                optimizeText.textContent = 'Optimize Speed Profile';
+                button.innerHTML = '<i class="fas fa-rocket mr-2"></i><span id="optimizeText">Optimize Speed Profile</span>';
+                button.disabled = false;
+            }
+        }
+        // Update efficiency gauge animation
+        function updateEfficiencyGauge(efficiency) {
+            const circumference = 2 * Math.PI * 40;
+            const offset = circumference - (efficiency / 50) * circumference;
+            const circle = document.getElementById('efficiencyCircle');
+            if (circle) {
+                circle.style.strokeDashoffset = offset;
+                // Find the efficiency text and update it
+                const gaugeContainer = circle.closest('.relative');
+                const efficiencyText = gaugeContainer?.querySelector('.text-2xl');
+                if (efficiencyText) {
+                    efficiencyText.textContent = `${efficiency.toFixed(0)}%`;
+                }
+            }
+        }
+        // Alert Popup System
+        let alertPopupPosition = 'top-right';
+        let popupCounter = 0;
+        function togglePopupPosition() {
+            const container = document.getElementById('alertPopupContainer');
+            const positionText = document.getElementById('positionText');            
+            if (alertPopupPosition === 'top-right') {
+                alertPopupPosition = 'bottom-right';
+                container.className = 'alert-popup-container bottom-right';
+                positionText.textContent = 'Bottom Right';
+            } else {
+                alertPopupPosition = 'top-right';
+                container.className = 'alert-popup-container top-right';
+                positionText.textContent = 'Top Right';
+            }
+        }
+        // Alert Sound System
+        function playAlertSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);                
+                // Longer beep sound with pleasant tone
+                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+                oscillator.type = 'sine';                
+                // Increased duration from 0.2 to 0.4 seconds
+                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.4);
+            } catch (error) {
+                console.log('Web Audio API not supported:', error);
+            }
+        }
+        function showAlertPopup(alertData) {
+            const container = document.getElementById('alertPopupContainer');
+            const popupId = `popup-${++popupCounter}`;            
+            // Play alert sound
+            playAlertSound();            
+            const severityColors = {
+                'weather': { bg: 'rgba(234, 179, 8, 0.2)', border: '#eab308', icon: 'fa-cloud-bolt' },
+                'navigation': { bg: 'rgba(249, 115, 22, 0.2)', border: '#f97316', icon: 'fa-compass' },
+                'security': { bg: 'rgba(239, 68, 68, 0.2)', border: '#ef4444', icon: 'fa-shield-alt' },
+                'mechanical': { bg: 'rgba(168, 85, 247, 0.2)', border: '#a855f7', icon: 'fa-cog' },
+                'traffic': { bg: 'rgba(59, 130, 246, 0.2)', border: '#3b82f6', icon: 'fa-ship' },
+                'fuel': { bg: 'rgba(239, 68, 68, 0.2)', border: '#ef4444', icon: 'fa-gas-pump' }
+            };
+            const colorData = severityColors[alertData.type] || severityColors['weather'];
+            const popup = document.createElement('div');
+            popup.id = popupId;
+            popup.className = 'alert-popup';
+            popup.style.borderLeftColor = colorData.border;
+            popup.style.background = colorData.bg;
+            popup.innerHTML = `
+                <div class="close-btn" onclick="closeAlertPopup('${popupId}')">
+                    <i class="fas fa-times text-xs"></i>
+                </div>
+                <div class="flex items-start">
+                    <i class="fas ${colorData.icon} mr-3 mt-1" style="color: ${colorData.border}"></i>
+                    <div class="flex-1">
+                        <div class="mb-2">
+                            <span class="font-semibold text-xs" style="color: ${colorData.border}">${alertData.title}</span>
+                        </div>
+                        <p class="text-ocean-100 text-sm mb-2">${alertData.description}</p>
+                        ${alertData.metric ? `
+                            <div class="flex items-center justify-between text-xs text-ocean-300">
+                                <div class="flex items-center">
+                                    <i class="fas ${alertData.metricIcon} mr-1"></i>
+                                    <span>${alertData.metric}</span>
+                                </div>
+                                <span>${alertData.time}</span>
+                            </div>
+                        ` : `
+                            <div class="flex justify-end text-xs text-ocean-300">
+                                <span>${alertData.time}</span>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;            
+            if (alertPopupPosition === 'bottom-right') {
+                container.insertBefore(popup, container.firstChild);
+            } else {
+                container.appendChild(popup);
+            }            
+            // Trigger animation
+            setTimeout(() => popup.classList.add('show'), 10);
+            
+            // Auto-remove after 6 seconds
+            setTimeout(() => closeAlertPopup(popupId), 6000);
+        }
+        function closeAlertPopup(popupId) {
+            const popup = document.getElementById(popupId);
+            if (popup) {
+                popup.classList.add('hide');
+                setTimeout(() => {
+                    if (popup.parentNode) {
+                        popup.parentNode.removeChild(popup);
+                    }
+                }, 300);
+            }
+        }
+        function triggerAlertPopups(selectedCategories) {
+            const alertsData = {
+                'weather': {
+                    type: 'weather',
+                    title: 'WEATHER WARNING',
+                    time: '14:30 UTC',
+                    description: 'High winds (25-30 knots) expected in sector 7-9. Recommend reduced speed.',
+                    metric: 'Wind Speed: 28 knots',
+                    metricIcon: 'fa-wind'
+                },
+                'navigation': [
+                    {
+                        type: 'navigation',
+                        title: 'NAVIGATION ALERT',
+                        time: '12:45 UTC',
+                        description: 'Dense fog reported in approach channels. Visibility reduced to 0.5 nautical miles.',
+                        metric: 'Visibility: 0.5 nm',
+                        metricIcon: 'fa-eye-slash'
+                    },
+                    {
+                        type: 'traffic',
+                        title: 'TRAFFIC ALERT',
+                        time: '16:20 UTC',
+                        description: 'Heavy traffic congestion at Port Mumbai. Expected delay: 2-3 hours.',
+                        metric: 'Queue: 12 vessels',
+                        metricIcon: 'fa-ship'
+                    }
+                ],
+                'mechanical': [
+                    {
+                        type: 'mechanical',
+                        title: 'MAINTENANCE',
+                        time: '18:00 UTC',
+                        description: 'Engine temperature slightly elevated. Schedule maintenance check at next port.',
+                        metric: 'Temperature: 85°C',
+                        metricIcon: 'fa-thermometer-half'
+                    },
+                    {
+                        type: 'fuel',
+                        title: 'FUEL WARNING',
+                        time: '20:15 UTC',
+                        description: 'Fuel consumption 15% higher than optimal. Consider route optimization.',
+                        metric: 'Efficiency: 85%',
+                        metricIcon: 'fa-gas-pump'
+                    }
+                ],
+                'security': {
+                    type: 'security',
+                    title: 'SECURITY ALERT',
+                    time: '22:30 UTC',
+                    description: 'Piracy risk elevated in coordinates 18°N, 69°E. Maintain safe distance from coast.',
+                    metric: 'Risk Level: High',
+                    metricIcon: 'fa-shield-alt'
+                }
+            };
+            let delay = 0;
+            selectedCategories.forEach(category => {
+                const categoryAlerts = alertsData[category];
+                if (categoryAlerts) {
+                    if (Array.isArray(categoryAlerts)) {
+                        categoryAlerts.forEach(alert => {
+                            setTimeout(() => showAlertPopup(alert), delay);
+                            delay += 1500; // 1.5 second delay between alerts
+                        });
+                    } else {
+                        setTimeout(() => showAlertPopup(categoryAlerts), delay);
+                        delay += 1500;
+                    }
+                }
+            });
+        }
+        // Enhanced alerts with different types
+        async function loadAlerts() {
+            const button = document.getElementById('loadAlerts');
+            const resultDiv = document.getElementById('alertsData');
+            const alertBadge = document.getElementById('alertBadge');            
+            // Check if this function was called by clicking the scan button
+            // (We'll track this with a flag)
+            if (!window.scanButtonClicked) {
+                return; // Don't show alerts unless scan button was clicked
+            }            
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Scanning...';
+            button.disabled = true;
+            try {
+                const response = await fetch(`${API_BASE}/alerts`);
+                const data = await response.json();                
+                if (data.alerts && data.alerts.length > 0) {
+                    const alertsHtml = data.alerts.map(alert => {
+                        const severityColors = {
+                            'low': 'yellow',
+                            'medium': 'orange', 
+                            'high': 'red',
+                            'critical': 'red'
+                        };
+                        const color = severityColors[alert.severity.toLowerCase()] || 'yellow';                        
+                        return `
+                        <div class="bg-${color}-900/30 border-l-4 border-${color}-400 p-3 mb-2 rounded">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-exclamation-triangle text-${color}-400 mr-2"></i>
+                                    <span class="font-semibold">${alert.type}</span>
+                                </div>
+                                <span class="text-xs bg-${color}-500/20 px-2 py-1 rounded">${alert.severity.toUpperCase()}</span>
+                            </div>
+                            <div class="text-xs text-${color}-200 mt-1">${alert.description}</div>
+                            <div class="text-xs text-${color}-300 mt-1">Area: ${alert.area || 'Route area'}</div>
+                        </div>
+                    `;}).join('');                    
+                    resultDiv.innerHTML = alertsHtml;
+                    document.getElementById('alertCount').textContent = data.alerts.length;
+                    document.getElementById('warningCount').textContent = data.alerts.filter(a => a.severity === 'medium').length;
+                    document.getElementById('criticalCount').textContent = data.alerts.filter(a => a.severity === 'high' || a.severity === 'critical').length;
+                    alertBadge.textContent = `${data.alerts.length} Active Alert${data.alerts.length !== 1 ? 's' : ''}`;
+                    alertBadge.className = 'text-xs px-2 py-1 bg-red-500/20 rounded-full border border-red-400/30 text-red-400';
+                } else {
+                    // Check which alert categories are selected
+                    const selectedCategories = [];
+                    ['weatherAlerts', 'navigationAlerts', 'securityAlerts', 'mechanicalAlerts'].forEach(alertType => {
+                        const button = document.getElementById(alertType);
+                        if (button && button.classList.contains('selected-alert')) {
+                            selectedCategories.push(button.getAttribute('data-type'));
+                        }
+                    });
+                    // If no categories are selected, show "Select alert categories" message
+                    if (selectedCategories.length === 0) {
+                        resultDiv.innerHTML = `
+                            <div class="flex flex-col items-center justify-center py-6 text-ocean-300">
+                                <i class="fas fa-filter mb-2 text-2xl"></i>
+                                <p>Please select alert categories above</p>
+                                <p class="text-sm text-ocean-400 mt-1">Choose from Weather, Navigation, Security, or Mechanical</p>
+                            </div>
+                        `;
+                        document.getElementById('alertCount').textContent = '0';
+                        document.getElementById('warningCount').textContent = '0';
+                        document.getElementById('criticalCount').textContent = '0';
+                        alertBadge.textContent = 'Select Categories';
+                        alertBadge.className = 'text-xs px-2 py-1 bg-blue-500/20 rounded-full border border-blue-400/30 text-blue-400';
+                        return;
+                    }
+                    // Generate alerts based on selected categories
+                    let alertsToShow = [];
+                    let warningCount = 0;
+                    let criticalCount = 0;
+                    if (selectedCategories.includes('weather')) {
+                        alertsToShow.push(`
+                            <div class="glass rounded-lg p-3 border-l-4 border-yellow-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-yellow-400 font-semibold text-xs">WEATHER WARNING</span>
+                                    <span class="text-xs text-ocean-300">14:30 UTC</span>
+                                </div>
+                                <p class="text-ocean-100 text-sm">High winds (25-30 knots) expected in sector 7-9. Recommend reduced speed.</p>
+                                <div class="flex items-center mt-2 text-xs text-ocean-300">
+                                    <i class="fas fa-wind mr-1"></i>
+                                    <span>Wind Speed: 28 knots</span>
+                                </div>
+                            </div>
+                        `);
+                        warningCount++;
+                    }
+                    if (selectedCategories.includes('navigation')) {
+                        alertsToShow.push(`
+                            <div class="glass rounded-lg p-3 border-l-4 border-orange-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-orange-400 font-semibold text-xs">NAVIGATION ALERT</span>
+                                    <span class="text-xs text-ocean-300">12:45 UTC</span>
+                                </div>
+                                <p class="text-ocean-100 text-sm">Dense fog reported in approach channels. Visibility reduced to 0.5 nautical miles.</p>
+                                <div class="flex items-center mt-2 text-xs text-ocean-300">
+                                    <i class="fas fa-eye-slash mr-1"></i>
+                                    <span>Visibility: 0.5 nm</span>
+                                </div>
+                            </div>
+                        `);
+                        warningCount++;
+                        alertsToShow.push(`
+                            <div class="glass rounded-lg p-3 border-l-4 border-blue-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-blue-400 font-semibold text-xs">TRAFFIC ALERT</span>
+                                    <span class="text-xs text-ocean-300">16:20 UTC</span>
+                                </div>
+                                <p class="text-ocean-100 text-sm">Heavy traffic congestion at Port Mumbai. Expected delay: 2-3 hours.</p>
+                                <div class="flex items-center mt-2 text-xs text-ocean-300">
+                                    <i class="fas fa-ship mr-1"></i>
+                                    <span>Queue: 12 vessels</span>
+                                </div>
+                            </div>
+                        `);
+                        warningCount++;
+                    }
+                    if (selectedCategories.includes('mechanical')) {
+                        alertsToShow.push(`
+                            <div class="glass rounded-lg p-3 border-l-4 border-purple-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-purple-400 font-semibold text-xs">MAINTENANCE</span>
+                                    <span class="text-xs text-ocean-300">18:00 UTC</span>
+                                </div>
+                                <p class="text-ocean-100 text-sm">Engine temperature slightly elevated. Schedule maintenance check at next port.</p>
+                                <div class="flex items-center mt-2 text-xs text-ocean-300">
+                                    <i class="fas fa-thermometer-half mr-1"></i>
+                                    <span>Temperature: 85°C</span>
+                                </div>
+                            </div>
+                        `);
+                        warningCount++;
+                        alertsToShow.push(`
+                            <div class="glass rounded-lg p-3 border-l-4 border-red-500">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-red-400 font-semibold text-xs">FUEL WARNING</span>
+                                    <span class="text-xs text-ocean-300">20:15 UTC</span>
+                                </div>
+                                <p class="text-ocean-100 text-sm">Fuel consumption 15% higher than optimal. Consider route optimization.</p>
+                                <div class="flex items-center mt-2 text-xs text-ocean-300">
+                                    <i class="fas fa-gas-pump mr-1"></i>
+                                    <span>Efficiency: 85%</span>
+                                </div>
+                            </div>
+                        `);
+                        criticalCount++;
+                    }
+                    if (selectedCategories.includes('security')) {
+                        alertsToShow.push(`
+                            <div class="glass rounded-lg p-3 border-l-4 border-red-600">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-red-500 font-semibold text-xs">SECURITY ALERT</span>
+                                    <span class="text-xs text-ocean-300">22:30 UTC</span>
+                                </div>
+                                <p class="text-ocean-100 text-sm">Piracy risk elevated in coordinates 18°N, 69°E. Maintain safe distance from coast.</p>
+                                <div class="flex items-center mt-2 text-xs text-ocean-300">
+                                    <i class="fas fa-shield-alt mr-1"></i>
+                                    <span>Risk Level: High</span>
+                                </div>
+                            </div>
+                        `);
+                        criticalCount++;
+                    }
+                    // Show filtered alerts
+                    resultDiv.innerHTML = `
+                        <div class="text-sm text-ocean-200 space-y-2 max-h-64 overflow-y-auto maritime-scrollbar pr-3">
+                            ${alertsToShow.join('')}
+                        </div>
+                    `;
+                    // Update counters
+                    const totalAlerts = alertsToShow.length;
+                    document.getElementById('alertCount').textContent = totalAlerts.toString();
+                    document.getElementById('warningCount').textContent = warningCount.toString();
+                    document.getElementById('criticalCount').textContent = criticalCount.toString();
+                    alertBadge.textContent = `${totalAlerts} Active Alert${totalAlerts !== 1 ? 's' : ''}`;
+                    alertBadge.className = totalAlerts > 0 ? 
+                        'text-xs px-2 py-1 bg-orange-500/20 rounded-full border border-orange-400/30 text-orange-400' :
+                        'text-xs px-2 py-1 bg-green-500/20 rounded-full border border-green-400/30 text-green-400';                    
+                    // Trigger popup alerts if there are alerts to show
+                    if (totalAlerts > 0) {
+                        triggerAlertPopups(selectedCategories);
+                    }                    
+                    // Update main dashboard alert count
+                    const mainAlertCount = document.getElementById('alertCount');
+                    const alertCard = mainAlertCount.closest('.weather-card');
+                    if (alertCard && totalAlerts > 0) {
+                        const statusDiv = alertCard.querySelector('.text-green-400, .text-orange-400');
+                        if (statusDiv) {
+                            statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i>Monitoring';
+                            statusDiv.className = statusDiv.className.replace('text-green-400', 'text-orange-400');
+                        }
+                    } else if (alertCard && totalAlerts === 0) {
+                        const statusDiv = alertCard.querySelector('.text-green-400, .text-orange-400');
+                        if (statusDiv) {
+                            statusDiv.innerHTML = '<i class="fas fa-check mr-1"></i>All Clear';
+                            statusDiv.className = statusDiv.className.replace('text-orange-400', 'text-green-400');
+                        }
+                    }
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="text-red-400 flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Failed to load alerts
+                    </div>
+                `;
+            } finally {
+                button.innerHTML = '<i class="fas fa-search mr-2"></i>Scan for Alerts';
+                button.disabled = false;
+                window.scanButtonClicked = false; // Reset the flag
+            }
+        }
+        // Map layer controls
+        function toggleMapLayer(layerType) {
+            console.log('Toggling layer:', layerType);
+            const button = document.getElementById(layerType);
+            if (!button) {
+                console.error('Button not found for layer:', layerType);
+                return;
+            }            
+            const isActive = button.classList.contains('border-cyan-500');
+            console.log('Layer', layerType, 'is currently', isActive ? 'ACTIVE' : 'INACTIVE');            
+            if (isActive) {
+                // Deactivate layer
+                button.classList.remove('border-cyan-500', 'bg-cyan-500/20');
+                button.classList.add('border-gray-500/50');
+                activeMapLayers = activeMapLayers.filter(l => l !== layerType);                
+                // Remove layer-specific visual effects
+                removeLayerEffects(layerType);
+                console.log('Layer', layerType, 'DEACTIVATED');                
+            } else {
+                // Activate layer
+                button.classList.remove('border-gray-500/50');
+                button.classList.add('border-cyan-500', 'bg-cyan-500/20');
+                activeMapLayers.push(layerType);                
+                // Add layer-specific visual effects
+                addLayerEffects(layerType);
+                console.log('Layer', layerType, 'ACTIVATED');
+            }            
+            // Update active layers counter
+            const activeLayersElement = document.getElementById('activeLayers');
+            if (activeLayersElement) {
+                activeLayersElement.textContent = activeMapLayers.length;
+                console.log('Active layers count updated to:', activeMapLayers.length);
+            }            
+            // Log layer status
+            console.log('All active layers:', activeMapLayers);
+        }
+        // Add visual effects for specific layer types
+        function addLayerEffects(layerType) {
+            const mapElement = document.getElementById('map');
+            if (!mapElement) return;
+            switch(layerType) {
+                case 'weatherLayer':
+                    addWeatherLayerEffects(mapElement);
+                    break;
+                case 'windLayer':
+                    addWindLayerEffects(mapElement);
+                    break;
+                case 'waveLayer':
+                    addWaveLayerEffects(mapElement);
+                    break;
+                case 'trafficLayer':
+                    addTrafficLayerEffects(mapElement);
+                    break;
+                case 'safetyLayer':
+                    addSafetyLayerEffects(mapElement);
+                    break;
+            }
+        }
+        // Remove visual effects for specific layer types
+        function removeLayerEffects(layerType) {
+            const mapElement = document.getElementById('map');
+            if (!mapElement) {
+                console.error('Map element not found');
+                return;
+            }
+            // Remove layer-specific overlays
+            const existingOverlay = document.getElementById(`${layerType}Overlay`);
+            if (existingOverlay) {
+                existingOverlay.remove();
+                console.log('Removed overlay for', layerType);
+            }            
+            // Remove layer indicators by ID
+            const indicatorId = `${layerType}Indicator`;
+            const indicator = document.getElementById(indicatorId);
+            if (indicator) {
+                indicator.remove();
+                console.log('Removed indicator for', layerType);
+            }
+            // Remove Leaflet map layers if they exist
+            if (window.map && map.getContainer()) {
+                try {
+                    if (layerType === 'weatherLayer' && window.weatherMapLayer) {
+                        map.removeLayer(window.weatherMapLayer);
+                        window.weatherMapLayer = null;
+                        console.log('Removed Leaflet weather layer');
+                    }
+                    if (layerType === 'windLayer' && window.windMapLayer) {
+                        map.removeLayer(window.windMapLayer);
+                        window.windMapLayer = null;
+                        console.log('Removed Leaflet wind layer');
+                    }
+                } catch (e) {
+                    console.log('Error removing Leaflet layer:', e);
+                }
+            }
+        }
+        // Weather layer effects
+        function addWeatherLayerEffects(mapElement) {
+            // Remove existing weather overlay
+            removeLayerEffects('weatherLayer');            
+            // Create weather overlay container that sits on top of the map
+            const weatherOverlay = document.createElement('div');
+            weatherOverlay.id = 'weatherLayerOverlay';
+            weatherOverlay.className = 'absolute inset-0 pointer-events-none';
+            weatherOverlay.style.zIndex = '1000'; // Very high z-index to ensure it's above map tiles
+            weatherOverlay.style.background = `
+                radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.6) 0%, transparent 50%),
+                radial-gradient(circle at 70% 20%, rgba(34, 197, 94, 0.5) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(239, 68, 68, 0.5) 0%, transparent 40%),
+                radial-gradient(circle at 30% 80%, rgba(168, 85, 247, 0.4) 0%, transparent 50%)
+            `;
+            weatherOverlay.style.border = '3px solid rgba(59, 130, 246, 0.8)';
+            weatherOverlay.style.borderRadius = '12px';            
+            // Add animated weather particles
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'absolute w-3 h-3 bg-cyan-200 rounded-full opacity-80';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animation = `float ${3 + Math.random() * 2}s ease-in-out infinite`;
+                particle.style.animationDelay = Math.random() * 2 + 's';
+                particle.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.6)';
+                weatherOverlay.appendChild(particle);
+            }            
+            // Add weather icons for different zones
+            const weatherIcons = ['🌧️', '⛈️', '🌦️', '☀️', '⛅', '🌤️'];
+            for (let i = 0; i < 6; i++) {
+                const icon = document.createElement('div');
+                icon.className = 'absolute text-2xl opacity-90';
+                icon.innerHTML = weatherIcons[i];
+                icon.style.left = Math.random() * 85 + '%';
+                icon.style.top = Math.random() * 85 + '%';
+                icon.style.animation = `pulse ${2 + Math.random()}s ease-in-out infinite`;
+                icon.style.animationDelay = Math.random() * 1 + 's';
+                icon.style.filter = 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))';
+                icon.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+                weatherOverlay.appendChild(icon);
+            }            
+            // Add temperature indicators
+            const temps = ['22°C', '25°C', '19°C', '28°C', '21°C'];
+            for (let i = 0; i < 5; i++) {
+                const temp = document.createElement('div');
+                temp.className = 'absolute text-white text-sm font-bold bg-slate-700/80 px-2 py-1 rounded-full border border-white/50';
+                temp.innerHTML = temps[i];
+                temp.style.left = Math.random() * 80 + '%';
+                temp.style.top = Math.random() * 80 + '%';
+                temp.style.animation = `pulse ${1.5 + Math.random()}s ease-in-out infinite`;
+                temp.style.animationDelay = Math.random() * 2 + 's';
+                temp.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.6)';
+                weatherOverlay.appendChild(temp);
+            }            
+            // Add the overlay to the map container
+            mapElement.appendChild(weatherOverlay);            
+            // Also add as a Leaflet pane if map is available (for better integration)
+            if (window.map && map.getContainer()) {
+                try {
+                    // Create a custom pane for weather overlay with high z-index
+                    if (!map.getPane('weatherPane')) {
+                        map.createPane('weatherPane');
+                        map.getPane('weatherPane').style.zIndex = 1000;
+                        map.getPane('weatherPane').style.pointerEvents = 'none';
+                    }                    
+                    // Add weather layer as SVG overlay to ensure it stays on top
+                    const bounds = map.getBounds();
+                    const weatherSvgOverlay = L.svgOverlay(
+                        '<svg><rect width="100%" height="100%" fill="url(#weatherGradient)" opacity="0.3"/><defs><linearGradient id="weatherGradient"><stop offset="0%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#22c55e"/><stop offset="100%" stop-color="#ef4444"/></linearGradient></defs></svg>',
+                        bounds,
+                        { pane: 'weatherPane' }
+                    );
+                    weatherSvgOverlay.addTo(map);                    
+                    // Store reference for removal
+                    window.weatherMapLayer = weatherSvgOverlay;
+                } catch (e) {
+                    console.log('Could not add Leaflet weather layer:', e);
+                }
+            }            
+            // Add a prominent visual indicator that the layer is active
+            const indicator = document.createElement('div');
+            indicator.id = 'weatherLayerIndicator';
+            indicator.className = 'absolute top-2 left-2 bg-slate-700 text-white px-3 py-2 rounded-lg text-sm font-bold';
+            indicator.style.zIndex = '1001'; // Even higher z-index for indicator
+            indicator.textContent = '🌦️ WEATHER LAYER ACTIVE';
+            indicator.style.animation = 'pulse 2s ease-in-out infinite';
+            indicator.style.boxShadow = '0 0 15px rgba(59, 130, 246, 0.8)';
+            mapElement.appendChild(indicator);            
+            // Show weather data notification
+            showLayerNotification('Weather Layer Activated', '🌦️ Real-time weather data overlay enabled', 'success');
+        }
+        // Wind layer effects
+        function addWindLayerEffects(mapElement) {
+            // Remove existing wind overlay
+            removeLayerEffects('windLayer');            
+            // Create wind overlay
+            const windOverlay = document.createElement('div');
+            windOverlay.id = 'windLayerOverlay';
+            windOverlay.className = 'absolute inset-0 pointer-events-none';
+            windOverlay.style.zIndex = '1000'; // Very high z-index to ensure it's above map tiles
+            windOverlay.style.border = '3px solid rgba(6, 182, 212, 0.8)';
+            windOverlay.style.borderRadius = '12px';            
+            // Add wind direction arrows
+            for (let i = 0; i < 18; i++) {
+                const arrow = document.createElement('div');
+                arrow.className = 'absolute text-cyan-300 opacity-90 font-bold';
+                arrow.innerHTML = '➤';
+                arrow.style.left = Math.random() * 90 + '%';
+                arrow.style.top = Math.random() * 90 + '%';
+                arrow.style.fontSize = '16px';
+                arrow.style.transform = `rotate(${Math.random() * 360}deg)`;
+                arrow.style.animation = `pulse 2s ease-in-out infinite`;
+                arrow.style.animationDelay = Math.random() * 2 + 's';
+                arrow.style.filter = 'drop-shadow(0 0 3px rgba(6, 182, 212, 0.8))';
+                windOverlay.appendChild(arrow);
+            }            
+            // Add wind speed indicators
+            const windSpeeds = ['12kt', '8kt', '15kt', '6kt', '18kt', '11kt'];
+            for (let i = 0; i < 6; i++) {
+                const speed = document.createElement('div');
+                speed.className = 'absolute text-cyan-200 text-xs font-bold bg-cyan-900/70 px-2 py-1 rounded';
+                speed.innerHTML = windSpeeds[i];
+                speed.style.left = Math.random() * 80 + '%';
+                speed.style.top = Math.random() * 80 + '%';
+                speed.style.animation = `pulse ${1.8 + Math.random()}s ease-in-out infinite`;
+                speed.style.animationDelay = Math.random() * 2 + 's';
+                windOverlay.appendChild(speed);
+            }            
+            // Add wind flow lines
+            const windLines = document.createElement('div');
+            windLines.className = 'absolute inset-0';
+            windLines.style.background = `
+                linear-gradient(45deg, transparent 48%, rgba(6, 182, 212, 0.4) 49%, rgba(6, 182, 212, 0.4) 51%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, rgba(6, 182, 212, 0.3) 49%, rgba(6, 182, 212, 0.3) 51%, transparent 52%)
+            `;
+            windLines.style.backgroundSize = '25px 25px';
+            windLines.style.animation = 'windFlow 3s linear infinite';
+            windOverlay.appendChild(windLines);            
+            mapElement.appendChild(windOverlay);            
+            // Also add as a Leaflet pane if map is available (for better integration)
+            if (window.map && map.getContainer()) {
+                try {
+                    // Create a custom pane for wind overlay with high z-index
+                    if (!map.getPane('windPane')) {
+                        map.createPane('windPane');
+                        map.getPane('windPane').style.zIndex = 1000;
+                        map.getPane('windPane').style.pointerEvents = 'none';
+                    }                    
+                    // Add wind layer as SVG overlay to ensure it stays on top
+                    const bounds = map.getBounds();
+                    const windSvgOverlay = L.svgOverlay(
+                        '<svg><defs><pattern id="windPattern" patternUnits="userSpaceOnUse" width="20" height="20"><line x1="0" y1="10" x2="20" y2="10" stroke="#06b6d4" stroke-width="2" opacity="0.6"/></pattern></defs><rect width="100%" height="100%" fill="url(#windPattern)"/></svg>',
+                        bounds,
+                        { pane: 'windPane' }
+                    );
+                    windSvgOverlay.addTo(map);                    
+                    // Store reference for removal
+                    window.windMapLayer = windSvgOverlay;
+                } catch (e) {
+                    console.log('Could not add Leaflet wind layer:', e);
+                }
+            }            
+            // Add a prominent visual indicator that the wind layer is active
+            const indicator = document.createElement('div');
+            indicator.id = 'windLayerIndicator';
+            indicator.className = 'absolute top-2 right-2 bg-cyan-600 text-white px-3 py-2 rounded-lg text-sm font-bold';
+            indicator.style.zIndex = '1001'; // Even higher z-index for indicator
+            indicator.textContent = '💨 WIND LAYER ACTIVE';
+            indicator.style.animation = 'pulse 2s ease-in-out infinite';
+            indicator.style.boxShadow = '0 0 15px rgba(6, 182, 212, 0.8)';
+            mapElement.appendChild(indicator);            
+            // Show wind data notification
+            showLayerNotification('Wind Layer Activated', '💨 Wind patterns and direction overlay enabled', 'success');
+        }
+        // Wave layer effects
+        function addWaveLayerEffects(mapElement) {
+            removeLayerEffects('waveLayer');            
+            const waveOverlay = document.createElement('div');
+            waveOverlay.id = 'waveLayerOverlay';
+            waveOverlay.className = 'absolute inset-0 pointer-events-none z-10';
+            waveOverlay.style.background = `
+                repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(14, 165, 233, 0.2) 8px, rgba(14, 165, 233, 0.2) 16px),
+                repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(6, 182, 212, 0.15) 12px, rgba(6, 182, 212, 0.15) 24px)
+            `;
+            waveOverlay.style.animation = 'waveMotion 6s ease-in-out infinite';            
+            mapElement.appendChild(waveOverlay);
+            showLayerNotification('Wave Layer Activated', '🌊 Wave height and sea state overlay enabled', 'success');
+        }
+        // Traffic layer effects
+        function addTrafficLayerEffects(mapElement) {
+            removeLayerEffects('trafficLayer');            
+            const trafficOverlay = document.createElement('div');
+            trafficOverlay.id = 'trafficLayerOverlay';
+            trafficOverlay.className = 'absolute inset-0 pointer-events-none z-10';            
+            // Add moving vessel indicators
+            for (let i = 0; i < 6; i++) {
+                const vessel = document.createElement('div');
+                vessel.className = 'absolute w-3 h-3 bg-yellow-400 rounded-full';
+                vessel.style.left = Math.random() * 90 + '%';
+                vessel.style.top = Math.random() * 90 + '%';
+                vessel.style.animation = `vesselMove ${8 + Math.random() * 4}s linear infinite`;
+                vessel.style.animationDelay = Math.random() * 3 + 's';
+                trafficOverlay.appendChild(vessel);
+            }            
+            mapElement.appendChild(trafficOverlay);
+            showLayerNotification('Traffic Layer Activated', '🚢 Vessel traffic and AIS data overlay enabled', 'info');
+        }
+        // Safety layer effects
+        function addSafetyLayerEffects(mapElement) {
+            removeLayerEffects('safetyLayer');            
+            const safetyOverlay = document.createElement('div');
+            safetyOverlay.id = 'safetyLayerOverlay';
+            safetyOverlay.className = 'absolute inset-0 pointer-events-none z-10';            
+            // Add safety zone indicators
+            for (let i = 0; i < 4; i++) {
+                const zone = document.createElement('div');
+                zone.className = 'absolute border-2 border-red-400 border-dashed rounded-full opacity-60';
+                zone.style.width = '60px';
+                zone.style.height = '60px';
+                zone.style.left = Math.random() * 80 + '%';
+                zone.style.top = Math.random() * 80 + '%';
+                zone.style.animation = `pulse 3s ease-in-out infinite`;
+                zone.style.animationDelay = Math.random() * 2 + 's';
+                safetyOverlay.appendChild(zone);
+            }            
+            mapElement.appendChild(safetyOverlay);
+            showLayerNotification('Safety Layer Activated', '⚠️ Safety zones and hazard areas overlay enabled', 'warning');
+        }
+        // Show layer activation notifications
+        function showLayerNotification(title, message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-6 z-50 p-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 ${
+                type === 'success' ? 'bg-green-600' : 
+                type === 'warning' ? 'bg-yellow-600' : 
+                type === 'error' ? 'bg-red-600' : 'bg-slate-700'
+            } text-white max-w-sm`;            
+            notification.innerHTML = `
+                <div class="flex items-start">
+                    <div class="mr-3 text-lg">
+                        ${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}
+                    </div>
+                    <div>
+                        <div class="font-semibold">${title}</div>
+                        <div class="text-sm opacity-90">${message}</div>
+                    </div>
+                </div>
+            `;            
+            document.body.appendChild(notification);            
+            // Slide in
+            setTimeout(() => notification.classList.remove('translate-x-full'), 100);            
+            // Slide out and remove
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        // Speed slider update
+        function updateSpeedSlider() {
+            const slider = document.getElementById('speedLimit');
+            const display = document.getElementById('speedValue');
+            display.textContent = slider.value + ' kts';
+        }
+        // Timeline animation
+        function animateTimeline() {
+            const progress = document.getElementById('timelineProgress');
+            let currentProgress = 25;            
+            setInterval(() => {
+                currentProgress += 0.5;
+                if (currentProgress > 100) currentProgress = 0;
+                progress.style.width = currentProgress + '%';
+            }, 1000);
+        }
+        // Set timeline progress
+        function setTimelineProgress(percent) {
+            percent = Math.max(0, Math.min(100, percent));
+            document.getElementById('timelineProgress').style.width = percent + '%';
+            var indicator = document.querySelector('.timeline-current-indicator');
+            if (indicator) {
+                indicator.style.left = percent + '%';
+            }
+        }
+        // Automatically sync indicator with progress bar
+        function syncTimelineIndicator() {
+            var progressBar = document.getElementById('timelineProgress');
+            var indicator = document.querySelector('.timeline-current-indicator');
+            if (!progressBar || !indicator) return;
+            // Observe style changes
+            var observer = new MutationObserver(function() {
+                var width = progressBar.style.width;
+                if (width && width.endsWith('%')) {
+                    indicator.style.left = width;
+                }
+            });
+            observer.observe(progressBar, { attributes: true, attributeFilter: ['style'] });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            syncTimelineIndicator();
+        });
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Weather Engine Maritime - Initializing...');            
+            // Show immediate fallback content
+            setTimeout(() => {
+                const loader = document.getElementById('mapLoader');
+                const fallback = document.getElementById('mapFallback');
+                
+                // Show fallback immediately while map loads
+                if (fallback) {
+                    fallback.style.display = 'block';
+                    fallback.classList.remove('hidden');
+                }
+            }, 100);            
+            // Initialize all components with error handling
+            try {
+                initMap();
+            } catch (error) {
+                console.error('Map initialization failed:', error);
+                showMapFallback();
+            }            
+            try {
+                initWeatherChart();
+                initPerformanceChart();
+                initWeatherTrendChart();
+                initFuelChart();
+            } catch (error) {
+                console.error('Chart initialization failed:', error);
+            }            
+            try {
+                checkAPI();
+                animateTimeline();
+            } catch (error) {
+                console.error('API/Timeline initialization failed:', error);
+            }            
+            // Port selection listeners
+            document.getElementById('sourcePort').addEventListener('change', () => {
+                updateRouteDisplay();
+                setTimeout(drawRoute, 500); // Give map time to be ready
+            });            
+            document.getElementById('destinationPort').addEventListener('change', () => {
+                updateRouteDisplay();
+                setTimeout(drawRoute, 500);
+            });            
+            document.getElementById('updateRoute').addEventListener('click', () => {
+                updateRouteDisplay();
+                setTimeout(drawRoute, 500);
+            });
+            // Action button listeners
+            document.getElementById('loadForecast').addEventListener('click', loadForecast);
+            document.getElementById('optimizeRoute').addEventListener('click', optimizeRoute);
+            document.getElementById('loadAlerts').addEventListener('click', () => {
+                window.scanButtonClicked = true; // Set flag to indicate scan button was clicked
+                loadAlerts();
+            });
+            document.getElementById('refreshWeather').addEventListener('click', loadForecast);            
+            // Position toggle listener for alert popups
+            document.getElementById('positionToggle').addEventListener('click', togglePopupPosition);            
+            // Map control listeners
+            document.getElementById('centerMap').addEventListener('click', () => {
+                if (map) {
+                    map.setView([15.0, 74.0], 6);
+                } else {
+                    console.log('Map not available, using fallback centering');
+                }
+            });            
+            document.getElementById('fullscreen').addEventListener('click', () => {
+                const mapContainer = document.getElementById('map');
+                if (mapContainer && mapContainer.requestFullscreen) {
+                    mapContainer.requestFullscreen();
+                }
+            });
+            // Layer toggle listeners
+            ['weatherLayer', 'windLayer', 'waveLayer', 'trafficLayer', 'safetyLayer'].forEach(layerId => {
+                const button = document.getElementById(layerId);
+                if (button) {
+                    button.addEventListener('click', () => toggleMapLayer(layerId));
+                }
+            });
+            // Alert type filter listeners
+            ['weatherAlerts', 'navigationAlerts', 'securityAlerts', 'mechanicalAlerts'].forEach(alertType => {
+                const button = document.getElementById(alertType);
+                if (button) {
+                    button.addEventListener('click', () => {
+                        const checkmark = button.querySelector('.checkmark');
+                        const selected = button.classList.contains('selected-alert');
+                        if (!selected) {
+                            button.classList.add('selected-alert', 'font-bold', 'border-2');
+                            checkmark.classList.remove('hidden');
+                        } else {
+                            button.classList.remove('selected-alert', 'font-bold', 'border-2');
+                            checkmark.classList.add('hidden');
+                        }
+                        // Don't call loadAlerts() here - only when scan button is clicked
+                    });
+                }
+            });
+            // Speed slider listener
+            document.getElementById('speedLimit').addEventListener('input', updateSpeedSlider);            
+            // Status refresh
+            if (document.getElementById('refreshStatus')) {
+                document.getElementById('refreshStatus').addEventListener('click', checkAPI);
+            }            
+            // Auto-refresh status every 30 seconds
+            setInterval(checkAPI, 30000);            
+            // Initialize displays
+            updateSpeedSlider();
+            updateRouteDisplay();            
+            console.log('Weather Engine Maritime - Initialization complete');
+        });
+        // Enhanced floating particles
+        function createFloatingElement() {
+            const element = document.createElement('div');
+            element.className = 'floating-particles';
+            element.style.left = Math.random() * 100 + '%';
+            element.style.animationDelay = Math.random() * 10 + 's';
+            element.style.animationDuration = (Math.random() * 10 + 15) + 's';            
+            // Add different particle types
+            const types = ['💧', '🌊', '⭐', '✨'];
+            if (Math.random() > 0.8) {
+                element.innerHTML = types[Math.floor(Math.random() * types.length)];
+                element.style.fontSize = '12px';
+                element.style.background = 'transparent';
+            }            
+            document.body.appendChild(element);            
+            setTimeout(() => {
+                element.remove();
+            }, 25000);
+        }
+        // Create floating particles periodically
+        setInterval(createFloatingElement, 2000);
+        // Simulate vessel movement
+        setInterval(() => {
+            document.getElementById('visibleVessels').textContent = Math.floor(Math.random() * 5) + 2;
+        }, 10000);
+        // Live India Time Display
+        function updateIndiaTime() {
+            const now = new Date();
+            // Convert to India Standard Time (IST) - UTC+5:30
+            const indiaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+            const timeOptions = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+                timeZone: 'Asia/Kolkata'
+            };
+            const timeOptions24 = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Kolkata'
+            };
+            const dateOptions = {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                timeZone: 'Asia/Kolkata'
+            };
+            const timeString = indiaTime.toLocaleTimeString('en-IN', timeOptions);
+            const timeString24 = indiaTime.toLocaleTimeString('en-IN', timeOptions24);
+            const dateString = indiaTime.toLocaleDateString('en-IN', dateOptions);
+            // Update navigation time
+            const liveTimeElement = document.getElementById('liveTime');
+            if (liveTimeElement) {
+                liveTimeElement.innerHTML = `
+                    <div class="text-right">
+                        <div class="font-bold text-ocean-100">${timeString}</div>
+                        <div class="text-xs text-ocean-300">${dateString} IST</div>
+                    </div>
+                `;
+            }
+            // Update timeline time
+            const timelineTimeElement = document.getElementById('timelineTime');
+            if (timelineTimeElement) {
+                timelineTimeElement.textContent = `${timeString24} IST`;
+            }
+        }
+        // Update time immediately and then every second
+        updateIndiaTime();
+        setInterval(updateIndiaTime, 1000);
+        // Enhanced Dynamic Background with Vanta.js
+        let vantaEffect = null;
+        function initializeBackground() {
+            try {
+                // Initialize Vanta.js WAVES effect for better visibility
+                vantaEffect = VANTA.WAVES({
+                    el: "#vanta-background",
+                    mouseControls: true,
+                    touchControls: true,
+                    gyroControls: false,
+                    minHeight: 200.00,
+                    minWidth: 200.00,
+                    scale: 1.00,
+                    scaleMobile: 1.00,
+                    color: 0x0e1e34,
+                    shininess: 35.00,
+                    waveHeight: 25.00,
+                    waveSpeed: 0.75,
+                    zoom: 0.65
+                });
+                console.log('WAVES effect initialized successfully');
+            } catch (error) {
+                console.log('Vanta.js WAVES not available, trying TOPOLOGY...');
+                try {
+                    // TOPOLOGY with transparent background and dark blue lines
+                    vantaEffect = VANTA.TOPOLOGY({
+                        el: "#vanta-background",
+                        mouseControls: true,
+                        touchControls: true,
+                        gyroControls: false,
+                        minHeight: 200.00,
+                        minWidth: 200.00,
+                        scale: 1.00,
+                        scaleMobile: 1.00,
+                        color: 0x224466,        // Subtle dark blue lines
+                        backgroundColor: 0x00000000, // Fully transparent background
+                        size: 1.20,              // Smaller wave size for more detail
+                        spacing: 15.00           // Tighter spacing for more waves
+                    });
+                    console.log('TOPOLOGY effect initialized successfully');
+                } catch (error2) {
+                    console.log('Vanta.js TOPOLOGY not available, trying CELLS...');
+                    try {
+                        // Fallback to CELLS for similar low-poly effect
+                        vantaEffect = VANTA.CELLS({
+                            el: "#vanta-background",
+                            mouseControls: true,
+                            touchControls: true,
+                            gyroControls: false,
+                            minHeight: 200.00,
+                            minWidth: 200.00,
+                            scale: 1.00,
+                            color1: 0x4a90e2,
+                            color2: 0x6bb6ff,
+                            size: 2.00,
+                            speed: 1.50
+                        });
+                        console.log('CELLS effect initialized successfully');
+                    } catch (error3) {
+                        console.log('All Vanta.js effects failed, using CSS background');
+                        document.getElementById('vanta-background').style.display = 'none';
+                    }
+                }
+            }
+        }
+        // Initialize background when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for Vanta.js to load
+            setTimeout(initializeBackground, 500);
+        });
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (vantaEffect) vantaEffect.destroy();
+        });
+    </script>
+</body>
+</html>
